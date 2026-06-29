@@ -1,0 +1,11 @@
+{
+  "skill_sync_periodic": {
+    "komut": "C:\\Users\\marko\\AppData\\Local\\hermes\\hermes-agent\\venv\\Scripts\\python.exe C:\\Users\\marko\\Desktop\\Reymen Proje\\ReYMeN-Ajan\\reymen\\cereyan\\cron_skill_sync.py",
+    "zaman": "every 6 hours",
+    "cron": "0 */6 * * *",
+    "aktif": true,
+    "aciklama": "Skills FTS5 index senkronizasyonu",
+    "kaynak": "cron_skill_sync.py",
+    "olusturma": "2026-06-29 08:24:22.334228"
+  }
+}

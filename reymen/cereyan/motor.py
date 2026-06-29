@@ -338,8 +338,6 @@ class Motor:
             "reymen.sistem.schema_manager",
             # Docker Sandbox + Threat Detection
             "reymen.guvenlik.docker_sandbox",
-            # Web aramasi (eski, web_search_engine ile degistirilecek)
-            "reymen.arac.web_search_tool",
             # Web Search Engine (coklu back-end)
             "reymen.arac.web_search_engine",
             # Gorsel Uretim Engine (FAL/OpenAI/xAI/Stub)
@@ -352,6 +350,10 @@ class Motor:
             "reymen.cereyan.skill_library",
             # Skill Activator (sorgudan otomatik aktivasyon)
             "reymen.cereyan.skill_activator",
+            # Skill cron sync (FTS5 index cron kaydi)
+            "reymen.cereyan.cron_skill_sync",
+            # Active skill tracker (LLM context enjeksiyonu)
+            "reymen.cereyan.active_skill_tracker",
             # Personality (kisilik sistemi)
             "agent.personalities",
             # Kapali Ogrenme Dongusu
@@ -491,6 +493,7 @@ class Motor:
             )
 
             def _aktivat_ve_izin_guncelle(ad: str = "") -> str:
+                from reymen.cereyan.active_skill_tracker import aktif_skill_ayarla
                 sonuc = skill_aktivat(ad)
                 # allowed-tools: skill'in bildirdigi araclari gecici whitelist'e ekle
                 try:
@@ -499,6 +502,11 @@ class Motor:
                         self.ekstra_izin_araclar.update(izinler)
                 except Exception as _e:
                     logger.warning("[Motor] except Exception (L321): %s", Exception)
+                    pass
+                # Aktif skill tracker'a kaydet (LLM context enjeksiyonu icin)
+                try:
+                    aktif_skill_ayarla(ad, sonuc)
+                except Exception:
                     pass
                 return sonuc
 

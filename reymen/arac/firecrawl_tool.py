@@ -3,23 +3,17 @@
 
 Firecrawl (api.firecrawl.dev/v1) kullanarak:
   - firecrawl_scrape(url) → URL'nin markdown içeriğini döndürür
-  - firecrawl_search(query) → web araması yapar, sonuçları listeler
+  - firecrawl_search(query) → web araması yapar (SearchDispatcher'a yönlendirir)
 
 API Key: FIRECRAWL_API_KEY env var'dan okunur.
-Yoksa keyless mode dener (Firecrawl bazı durumlarda limitsiz çalışabilir).
-
-Kullanım:
-    from reymen.arac.firecrawl_tool import firecrawl_web_extract, firecrawl_web_search
-
-    # Sayfa içeriği al
-    icerik = firecrawl_web_extract("https://example.com")
-
-    # Web araması
-    sonuclar = firecrawl_web_search("python asyncio tutorial")
 
 Motor kayıt:
     from reymen.arac.firecrawl_tool import motor_kaydet
     motor_kaydet(motor)
+
+Not: Web arama işlevi artık reymen.arac.web_search_engine'deki
+SearchDispatcher üzerinden yapılır. Bu dosya geriye uyumluluk için
+korunmaktadır.
 """
 
 import json
@@ -28,6 +22,8 @@ import os
 import urllib.error
 import urllib.request
 from typing import Optional
+
+from reymen.arac.web_search_engine import _get_registry as _get_dispatcher
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +67,6 @@ def firecrawl_web_extract(url: str, format: str = "markdown") -> str:
     url = url.strip()
     api_key = _api_key()
 
-    # Request body
     body = json.dumps({
         "url": url,
         "formats": [format],
@@ -89,7 +84,6 @@ def firecrawl_web_extract(url: str, format: str = "markdown") -> str:
         with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
             sonuc = json.loads(resp.read().decode("utf-8"))
 
-        # Firecrawl v1 response: {"success": true, "data": {"markdown": "...", ...}}
         if sonuc.get("success"):
             data = sonuc.get("data", {})
             icerik = data.get(format, "") or data.get("markdown", "") or data.get("content", "")
@@ -109,11 +103,9 @@ def firecrawl_web_extract(url: str, format: str = "markdown") -> str:
 
     except urllib.error.HTTPError as e:
         if e.code == 401:
-            return ("[FIRECRAWL] Kimlik doğrulama hatası. "
-                    "FIRECRAWL_API_KEY env var'ını kontrol edin.")
+            return "[FIRECRAWL] Kimlik doğrulama hatası. FIRECRAWL_API_KEY env var'ını kontrol edin."
         elif e.code == 402:
-            return ("[FIRECRAWL] Kredi limiti doldu. "
-                    "Firecrawl dashboard'dan kredi yükleyin.")
+            return "[FIRECRAWL] Kredi limiti doldu. Firecrawl dashboard'dan kredi yükleyin."
         elif e.code == 429:
             return "[FIRECRAWL] Rate limit aşıldı. Daha sonra tekrar deneyin."
         return f"[FIRECRAWL] HTTP {e.code}: {e.reason}"
@@ -125,7 +117,7 @@ def firecrawl_web_extract(url: str, format: str = "markdown") -> str:
 
 
 def firecrawl_web_search(query: str, max_results: int = 5, lang: str = "tr") -> str:
-    """Firecrawl ile web araması yap.
+    """Firecrawl ile web araması yap — SearchDispatcher'a yönlendirir.
 
     Args:
         query: Arama sorgusu
@@ -135,66 +127,9 @@ def firecrawl_web_search(query: str, max_results: int = 5, lang: str = "tr") -> 
     Returns:
         str: Formatlanmış arama sonuçları
     """
-    if not query or not query.strip():
-        return "[FIRECRAWL] Hata: 'query' boş olamaz."
-
-    query = query.strip()
-    api_key = _api_key()
-
-    body = json.dumps({
-        "query": query,
-        "maxResults": max_results,
-        "lang": lang,
-    }).encode()
-
-    req = urllib.request.Request(
-        f"{_API_BASE}/search",
-        data=body,
-        headers=_headers(api_key),
-        method="POST",
-    )
-
-    try:
-        with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
-            sonuc = json.loads(resp.read().decode("utf-8"))
-
-        # Firecrawl v1 search response: {"success": true, "data": {"results": [...]}}
-        if sonuc.get("success"):
-            results = sonuc.get("data", {}).get("results", [])
-            if not results:
-                return f"[FIRECRAWL] '{query}' için sonuç bulunamadı."
-
-            satirlar = [f"[Firecrawl Search — '{query}']:", "=" * 50]
-            for i, r in enumerate(results[:max_results], 1):
-                baslik = r.get("title", "Başlıksız")
-                url = r.get("url", "")
-                ozet = r.get("description", "") or r.get("content", "")[:200]
-
-                satirlar.append(f"\n{i}. {baslik}")
-                satirlar.append(f"   URL: {url}")
-                if ozet:
-                    satirlar.append(f"   Özet: {ozet[:180]}")
-
-            return "\n".join(satirlar)
-        else:
-            hata = sonuc.get("error", "Bilinmeyen hata")
-            return f"[FIRECRAWL] Arama başarısız: {hata}"
-
-    except urllib.error.HTTPError as e:
-        if e.code == 401:
-            return ("[FIRECRAWL] Kimlik doğrulama hatası. "
-                    "FIRECRAWL_API_KEY env var'ını kontrol edin.")
-        elif e.code == 402:
-            return ("[FIRECRAWL] Kredi limiti doldu. "
-                    "Firecrawl dashboard'dan kredi yükleyin.")
-        elif e.code == 429:
-            return "[FIRECRAWL] Rate limit aşıldı. Daha sonra tekrar deneyin."
-        return f"[FIRECRAWL] HTTP {e.code}: {e.reason}"
-    except urllib.error.URLError as e:
-        return f"[FIRECRAWL] Bağlantı hatası: {e.reason}"
-    except Exception as e:
-        logger.error("[FIRECRAWL] search hatası: %s", e)
-        return f"[FIRECRAWL] Hata: {e}"
+    # SearchDispatcher üzerinden firecrawl engine'i kullan
+    dispatcher = _get_dispatcher()
+    return dispatcher.ara(query, engine="firecrawl", max_sonuc=max_results)
 
 
 def firecrawl_durum() -> str:
@@ -235,8 +170,6 @@ def motor_kaydet(motor) -> None:
 
 
 # ── Kısa alias ────────────────────────────────────────────────────────────
-
-# Görevde istenen fonksiyon adı
 firecrawl_web_extract = firecrawl_web_extract
 
 

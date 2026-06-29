@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Security — ReYMeN Web UI{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2>🛡️ Guvenlik Yonetimi</h2>
+    <div class="flex">
+        <button class="btn btn-primary" hx-get="/api/security/durum" hx-target="#guvenlik-durum" hx-trigger="load, every 10s">🔄 Yenile</button>
+    </div>
+</div>
+
+<div id="guvenlik-durum" class="grid-3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem;">
+    <div class="kart"><div class="gri">Yukleniyor...</div></div>
+</div>
+
+<hr style="margin:1.5rem 0;border-color:var(--border);">
+
+<div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+    <!-- ── Docker Sandbox ── -->
+    <div class="kart">
+        <h2>🏖️ Docker Sandbox</h2>
+        <p class="gri">Docker container'da izole kod calistirma. Subprocess fallback mevcut.</p>
+        <div id="sandbox-detay" hx-get="/api/security/sandbox/status" hx-trigger="load, every 10s">
+            <div class="gri">Yukleniyor...</div>
+        </div>
+        <div style="margin-top:1rem;">
+            <button class="btn btn-primary" hx-post="/api/security/sandbox/build" hx-target="#sandbox-build-sonuc">📦 Image Build Et</button>
+        </div>
+        <div id="sandbox-build-sonuc" style="margin-top:0.5rem;"></div>
+    </div>
+
+    <!-- ── Firewall / Network Restriction ── -->
+    <div class="kart">
+        <h2>🛡️ Network Restriction</h2>
+        <p class="gri">Tum gidis trafigini engelle, sadece izinli IP'lere izin ver.</p>
+        <div id="firewall-detay" hx-get="/api/security/firewall/status" hx-trigger="load, every 10s">
+            <div class="gri">Yukleniyor...</div>
+        </div>
+        <div style="margin-top:1rem;">
+            <form hx-post="/api/security/firewall/apply" hx-target="#firewall-sonuc" hx-trigger="submit">
+                <div class="form-group">
+                    <label for="allowlist">Izinli IP/CIDR (virgul ile ayirin):</label>
+                    <input type="text" id="allowlist" name="allowlist" placeholder="10.0.0.0/8, 192.168.1.0/24" style="width:100%;padding:6px;border-radius:4px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);">
+                </div>
+                <div class="form-group" style="margin-top:0.5rem;">
+                    <label>
+                        <input type="checkbox" name="block_domains" value="true"> Domain engelleme de aktif
+                    </label>
+                </div>
+                <div class="flex" style="gap:0.5rem;margin-top:0.5rem;">
+                    <button type="submit" class="btn btn-primary">🔒 Kisitlamayi Uygula</button>
+                    <button class="btn btn-danger" hx-post="/api/security/firewall/remove" hx-target="#firewall-sonuc">🔓 Kaldir</button>
+                </div>
+            </form>
+        </div>
+        <div id="firewall-sonuc" style="margin-top:0.5rem;"></div>
+    </div>
+</div>
+
+<div style="margin-top:1.5rem;">
+    <!-- ── Karantina ── -->
+    <div class="kart">
+        <h2>📦 Karantina</h2>
+        <p class="gri">Guvenlik tehdidi tespit edilen dosyalar.</p>
+        <div class="flex" style="gap:0.5rem;margin-bottom:0.5rem;">
+            <button class="btn btn-primary" hx-get="/api/security/quarantine" hx-target="#karantina-liste">📋 Listele</button>
+            <button class="btn btn-danger" hx-post="/api/security/quarantine/clean" hx-target="#karantina-sonuc" hx-confirm="Karantina tamamen temizlensin mi?">🧹 Temizle</button>
+        </div>
+        <div id="karantina-liste">
+            <div class="gri">Listelemek icin butona tiklayin.</div>
+        </div>
+        <div id="karantina-sonuc" style="margin-top:0.5rem;"></div>
+    </div>
+</div>
+
+<script>
+    // Otomatik yenileme hata durumunda da devam etsin
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.failed) {
+            console.warn('HTMX istek hatasi:', evt.detail.pathInfo.requestPath);
+        }
+    });
+</script>
+{% endblock %}

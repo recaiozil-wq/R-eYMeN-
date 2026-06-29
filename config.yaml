@@ -197,6 +197,11 @@ memory:
   memory_char_limit: 50000
   user_char_limit: 25000
 
+# ── Web Arama ─────────────────────────────────────────────────
+web:
+  backend: "auto"            # Varsayilan backend: auto|duckduckgo|firecrawl|brave|searxng|exa
+  search_backend: ""          # Per-capability override (opsiyonel)
+
 # ── Toolsets ──────────────────────────────────────────────
 toolsets:
   enabled:

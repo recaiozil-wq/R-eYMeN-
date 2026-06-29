@@ -32,3 +32,20 @@
 - Guncellenen: 0
 - Hata: 0
 
+
+## Sync — 2026-06-29 08:24:28
+
+| Metrik | Deger |
+|--------|-------|
+| Yeni | 1114 |
+| Guncellenen | 0 |
+| Hata | 0 |
+
+- Islem suresi: 1.9s
+- Toplam dosya: 1114
+- Meta kayit (oncesi): 6904
+- FTS5 kayit (oncesi): 21815
+- Yeni eklenen: 1114
+- Guncellenen: 0
+- Hata: 0
+

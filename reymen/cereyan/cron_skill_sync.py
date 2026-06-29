@@ -10,8 +10,10 @@ Her 6 saatte bir calisir (cron job).
 """
 
 import hashlib
+import json
 import logging
 import sqlite3
+import sys
 import time
 from datetime import datetime
 from pathlib import Path
@@ -27,6 +29,13 @@ ROOT = Path(__file__).parent.resolve()
 SKILLS_DIR = ROOT / "skills"
 DB_PATH = ROOT / ".ReYMeN" / "skills_index.db"
 DECISIONS_LOG = ROOT / ".ReYMeN" / "cron" / "skill_sync_log.md"
+CRON_JOBS_PATH = ROOT.parent / ".ReYMeN" / "cron" / "jobs.json"
+
+
+# Cron job kayit bilgisi
+CRON_JOB_ID = "skill_sync_periodic"
+CRON_SCHEDULE = "0 */6 * * *"
+CRON_HUMAN = "every 6 hours"
 
 
 def dosya_hash(content: str) -> str:
@@ -206,3 +215,56 @@ if __name__ == "__main__":
     sonuc = main()
     print(f"\nRAPOR: {sonuc['yeni']} yeni + {sonuc['guncellenen']} guncellendi "
           f"({sonuc['hata']} hata) - {sonuc['sure']}s")
+
+
+# ── Motor / Cron sistemine kayit ──────────────────────────────────────
+
+def cron_job_kaydet() -> str:
+    """Skill sync cron job'unu jobs.json'a kaydet."""
+    import json
+    sync_script = str(Path(__file__).resolve())
+    komut = f"{sys.executable} {sync_script}"
+
+    CRON_JOBS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    joblar = {}
+    if CRON_JOBS_PATH.exists():
+        try:
+            joblar = json.loads(CRON_JOBS_PATH.read_text(encoding="utf-8") or "{}")
+        except (json.JSONDecodeError, Exception):
+            joblar = {}
+
+    joblar[CRON_JOB_ID] = {
+        "komut": komut,
+        "zaman": CRON_HUMAN,
+        "cron": CRON_SCHEDULE,
+        "aktif": True,
+        "aciklama": "Skills FTS5 index senkronizasyonu",
+        "kaynak": "cron_skill_sync.py",
+        "olusturma": str(datetime.now()),
+    }
+    CRON_JOBS_PATH.write_text(
+        json.dumps(joblar, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    logger.info("[Cron] Skill sync job kaydedildi: %s (%s)", CRON_JOB_ID, CRON_HUMAN)
+    return f"[Cron] Kaydedildi: {CRON_JOB_ID}"
+
+
+def motor_kaydet(motor) -> bool:
+    """Motor / plugin sistemi icin kayit fonksiyonu.
+    
+    Motor._plugin_moduller_yukle() tarafindan otomatik cagrilir.
+    Skill sync cron job'unu kaydeder ve cron_skill_sync_register
+    tool'unu motora ekler.
+    """
+    try:
+        cron_job_kaydet()
+        # Ayrica bir SKILL_SYNC tool'u ekle
+        motor._plugin_arac_kaydet(
+            "SKILL_INDEX_SYNC",
+            lambda: cron_job_kaydet(),
+            "Skills FTS5 index cron job'unu kaydet/goruntule",
+        )
+        return True
+    except Exception as e:
+        logger.warning("[Cron] motor_kaydet hatasi: %s", e)
+        return False

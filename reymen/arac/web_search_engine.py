@@ -36,6 +36,8 @@ from abc import ABC, abstractmethod
 from html.parser import HTMLParser
 from typing import Optional
 
+import yaml
+
 log = logging.getLogger(__name__)
 
 # Shared HTTP helpers
@@ -498,14 +500,20 @@ class ExaEngine(WebSearchEngine):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Web Search Registry (Auto-detect + Config Backend)
+# SearchDispatcher — Tek Dispatcher (multi-backend ABC wrapper)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class WebSearchRegistry:
-    """Web arama engine'lerini kaydet, seç ve çalıştır.
+class SearchDispatcher:
+    """Multi-backend web arama dispatcher'ı.
 
-    Auto-detect: env var'larına göre hangi engine'lerin hazır olduğunu belirler.
-    Config backend: config'de web.backend veya web.search_backend varsa o engine kullanılır.
+    Tüm engine'leri registry'de tutar, config ve env var'larına göre
+    default engine'i seçer.
+
+    Kullanım:
+        dispatcher = SearchDispatcher(config=my_config)
+        dispatcher.kaydet(DuckDuckGoEngine())
+        sonuc = dispatcher.ara("python asyncio", engine="duckduckgo")
+        sonuc = dispatcher.ara("python asyncio")  # config'deki default
     """
 
     def __init__(self, config: Optional[dict] = None) -> None:
@@ -519,7 +527,7 @@ class WebSearchRegistry:
         self._engines[adi] = engine
         if self._varsayilan is None:
             self._varsayilan = adi
-        log.info("[WebSearchRegistry] Engine kaydedildi: %s", adi)
+        log.info("[SearchDispatcher] Engine kaydedildi: %s", adi)
 
     def _resolve_backend_from_config(self) -> Optional[str]:
         """Config'den backend seçimini çözümle.
@@ -527,17 +535,21 @@ class WebSearchRegistry:
         Öncelik sırası:
           1. web.search_backend (per-capability override)
           2. web.backend (genel web backend)
+          3. WEB_SEARCH_BACKEND env var
         """
+        # 1-2. YAML config
         web_cfg = self._config.get("web")
         if isinstance(web_cfg, dict):
-            # search_backend öncelikli
             search_bk = web_cfg.get("search_backend")
             if isinstance(search_bk, str) and search_bk.strip():
                 return search_bk.strip().lower()
-            # backend ikincil
             backend = web_cfg.get("backend")
             if isinstance(backend, str) and backend.strip():
                 return backend.strip().lower()
+        # 3. Env var
+        env_backend = os.environ.get("WEB_SEARCH_BACKEND", "").strip().lower()
+        if env_backend:
+            return env_backend
         return None
 
     def _auto_detect_best(self) -> str:
@@ -550,47 +562,38 @@ class WebSearchRegistry:
           4. searxng (SEARXNG_URL)
           5. duckduckgo (her zaman hazır, fallback)
         """
-        # Firecrawl
         fc_key = os.environ.get("FIRECRAWL_API_KEY") or os.environ.get("FIRECRAWL_KEY")
         if fc_key and not fc_key.startswith("***") and "firecrawl" in self._engines:
             return "firecrawl"
-        # Exa
         exa_key = os.environ.get("EXA_API_KEY", "").strip()
         if exa_key and not exa_key.startswith("***") and "exa" in self._engines:
             return "exa"
-        # Brave
         brave_key = os.environ.get("BRAVE_API_KEY", "").strip()
         if brave_key and not brave_key.startswith("***") and "brave" in self._engines:
             return "brave"
-        # SearXNG
         searxng_url = os.environ.get("SEARXNG_URL", "").strip()
         if searxng_url and "searxng" in self._engines:
             return "searxng"
-        # Son çare: duckduckgo
         return "duckduckgo"
 
     def _sec_varsayilan(self) -> Optional[WebSearchEngine]:
         """Config'den veya auto-detect'ten varsayılan engine'i seç."""
-        # 1. Config'den backend seçimi
         config_backend = self._resolve_backend_from_config()
         if config_backend and config_backend in self._engines:
             eng = self._engines[config_backend]
             if eng.hazir:
                 return eng
-        # 2. Config'de backend var ama hazır değil — auto-detect yap
-        # 3. Auto-detect en iyi engine
         best = self._auto_detect_best()
         eng = self._engines.get(best)
         if eng and eng.hazir:
             return eng
-        # 4. Hiçbiri hazır değilse duckduckgo'ya düş
         return self._engines.get("duckduckgo")
 
     def sec(self, ad: str) -> Optional[WebSearchEngine]:
         """Ada göre engine seç. Varsayılana düş."""
         eng = self._engines.get(ad)
         if eng is None and self._varsayilan:
-            log.warning("[WebSearchRegistry] '%s' bulunamadi, varsayilana dusuluyor: %s", ad, self._varsayilan)
+            log.warning("[SearchDispatcher] '%s' bulunamadi, varsayilana dusuluyor: %s", ad, self._varsayilan)
             return self._engines.get(self._varsayilan)
         return eng
 
@@ -598,22 +601,33 @@ class WebSearchRegistry:
     def varsayilan(self) -> Optional[WebSearchEngine]:
         return self._sec_varsayilan()
 
-    def calistir(self, engin_adi: str, sorgu: str, max_sonuc: int = 5) -> str:
-        """Belirtilen engine ile arama yap.
+    @property
+    def varsayilan_ad(self) -> str:
+        eng = self.varsayilan
+        return eng.ad if eng else ""
 
-        Eğer engin_adi "auto" veya boş ise, config/auto-detect ile en iyi engine seçilir.
+    def ara(self, sorgu: str, engine: Optional[str] = None, max_sonuc: int = 5) -> str:
+        """Ana arama metodu — tek dispatcher.
+
+        Args:
+            sorgu: Arama sorgusu.
+            engine: Kullanılacak engine adı (None veya "auto" = config'deki default).
+            max_sonuc: Maksimum sonuç sayısı.
+
+        Returns:
+            Formatlı arama sonuçları veya hata mesajı.
         """
-        if not engin_adi or engin_adi == "auto":
+        if not engine or engine == "auto":
             eng = self._sec_varsayilan()
             if eng is None:
                 return "[WEB_ARAMA] Kullanilabilir engine bulunamadi."
             adi = eng.ad
         else:
-            eng = self.sec(engin_adi)
-            adi = engin_adi
+            eng = self.sec(engine)
+            adi = engine
 
         if eng is None:
-            return f"[WEB_ARAMA] '{engin_adi}' engine'i bulunamadi ve varsayilan engine yok."
+            return f"[WEB_ARAMA] '{engine}' engine'i bulunamadi ve varsayilan engine yok."
 
         if not eng.hazir:
             return f"[WEB_ARAMA] '{adi}' engine'i hazir degil (bagimlilik eksik)."
@@ -622,49 +636,108 @@ class WebSearchRegistry:
         except NotImplementedError as e:
             return f"[WEB_ARAMA] '{adi}' henuz implemente edilmemis: {e}"
         except Exception as e:
-            log.exception("[WebSearchRegistry] '%s' calistirma hatasi:", adi)
+            log.exception("[SearchDispatcher] '%s' calistirma hatasi:", adi)
             return f"[WEB_ARAMA] '{adi}' hatasi: {e}"
 
+    def engine_listele(self) -> str:
+        """Kayitli engine'leri listele."""
+        satirlar = ["[WEB_ARAMA] Kayitli engine'ler:"]
+        default_adi = self.varsayilan_ad
+        for ad, eng in sorted(self._engines.items()):
+            durum = "hazir" if eng.hazir else "bagimlilik eksik"
+            isaret = " >" if ad == default_adi else "  "
+            satirlar.append(f"  {isaret} {ad} ({durum})")
+        backend_info = self._resolve_backend_from_config()
+        if backend_info:
+            satirlar.append(f"\n[Config] web.backend/search_backend: {backend_info}")
+        else:
+            satirlar.append("\n[Config] Backend secimi: auto-detect")
+        return "\n".join(satirlar)
 
-# ── Global registry singleton ──────────────────────────────────────────────────
 
-_registry: Optional[WebSearchRegistry] = None
+# ═══════════════════════════════════════════════════════════════════════════════
+# WebSearchRegistry — Eski isim, geriye uyumluluk alias'ı
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class WebSearchRegistry(SearchDispatcher):
+    """Geriye uyumluluk için eski isim. Yeni kod SearchDispatcher kullanmalı."""
+    pass
+
+
+# ── Global dispatcher singleton ────────────────────────────────────────────────
+
+_dispatcher: Optional[SearchDispatcher] = None
 
 
 def _load_config_for_registry() -> dict:
-    """Config dosyasını oku — varsa web.backend/web.search_backend için."""
+    """Config dosyasını oku — varsa web.backend/web.search_backend için.
+
+    Öncelik sırası:
+      1. reymen_cli.config / ReYMeN_cli.config (CLI yapılandırması)
+      2. Proje kökündeki config.yaml (doğrudan YAML okuma)
+      3. .ReYMeN/config.yaml (ikincil config)
+    """
+    # 1. CLI config
     try:
         from reymen_cli.config import load_config
-        return load_config() or {}
+        cfg = load_config() or {}
+        if cfg.get("web"):
+            return cfg
     except Exception:
         pass
     try:
         from ReYMeN_cli.config import load_config
-        return load_config() or {}
+        cfg = load_config() or {}
+        if cfg.get("web"):
+            return cfg
     except Exception:
         pass
+
+    # 2. Proje kökü config.yaml
+    import yaml
+    for cfg_yolu in [
+        os.path.join(os.path.dirname(__file__), "..", "..", "config.yaml"),
+        os.path.join(os.path.dirname(__file__), "..", "..", "config.yml"),
+    ]:
+        try:
+            with open(os.path.abspath(cfg_yolu)) as f:
+                cfg = yaml.safe_load(f) or {}
+                if cfg.get("web"):
+                    return cfg
+        except Exception:
+            pass
+
+    # 3. .ReYMeN/config.yaml
+    try:
+        dot_reymen = os.path.join(os.path.dirname(__file__), "..", "..", ".ReYMeN", "config.yaml")
+        with open(os.path.abspath(dot_reymen)) as f:
+            cfg = yaml.safe_load(f) or {}
+            return cfg
+    except Exception:
+        pass
+
     return {}
 
 
-def _get_registry() -> WebSearchRegistry:
-    global _registry
-    if _registry is None:
+def _get_registry() -> SearchDispatcher:
+    global _dispatcher
+    if _dispatcher is None:
         config = _load_config_for_registry()
-        _registry = WebSearchRegistry(config=config)
-        _registry.kaydet(DuckDuckGoEngine())
-        _registry.kaydet(GoogleEngine())
-        _registry.kaydet(BingEngine())
-        _registry.kaydet(FirecrawlEngine())
-        _registry.kaydet(BraveSearchEngine())
-        _registry.kaydet(SearXNGEngine())
-        _registry.kaydet(ExaEngine())
-    return _registry
+        _dispatcher = SearchDispatcher(config=config)
+        _dispatcher.kaydet(DuckDuckGoEngine())
+        _dispatcher.kaydet(GoogleEngine())
+        _dispatcher.kaydet(BingEngine())
+        _dispatcher.kaydet(FirecrawlEngine())
+        _dispatcher.kaydet(BraveSearchEngine())
+        _dispatcher.kaydet(SearXNGEngine())
+        _dispatcher.kaydet(ExaEngine())
+    return _dispatcher
 
 
 def reset_registry() -> None:
-    """Registry'i sıfırla (test / yeniden yapılandırma için)."""
-    global _registry
-    _registry = None
+    """Dispatcher'i sıfırla (test / yeniden yapılandırma için)."""
+    global _dispatcher
+    _dispatcher = None
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -685,26 +758,13 @@ def web_arama(sorgu: str, backend: str = "duckduckgo", max_sonuc: int = 5) -> st
         Formatli arama sonuclari veya hata mesaji.
     """
     reg = _get_registry()
-    return reg.calistir(backend, sorgu, max_sonuc)
+    return reg.ara(sorgu, engine=backend, max_sonuc=max_sonuc)
 
 
 def web_search_engine_listele() -> str:
     """Kayitli engine'leri listele."""
     reg = _get_registry()
-    satirlar = ["[WEB_ARAMA] Kayitli engine'ler:"]
-    default = reg.varsayilan
-    default_adi = default.ad if default else ""
-    for ad, eng in sorted(reg._engines.items()):
-        durum = "hazir" if eng.hazir else "bagimlilik eksik"
-        isaret = " >" if ad == default_adi else "  "
-        satirlar.append(f"  {isaret} {ad} ({durum})")
-    # Config backend bilgisi
-    backend_info = reg._resolve_backend_from_config()
-    if backend_info:
-        satirlar.append(f"\n[Config] web.backend/search_backend: {backend_info}")
-    else:
-        satirlar.append("\n[Config] Backend secimi: auto-detect")
-    return "\n".join(satirlar)
+    return reg.engine_listele()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

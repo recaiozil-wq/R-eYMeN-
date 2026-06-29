@@ -1237,6 +1237,13 @@ class ConversationLoop:
             except Exception as e:
                 log.warning("PromptBuilder hatasi: %s", e)
 
+        # Aktif skill context'ini ekle (auto-activation)
+        try:
+            from reymen.cereyan.active_skill_tracker import aktif_skill_context_ekle
+            skill_context = aktif_skill_context_ekle()
+        except Exception:
+            skill_context = ""
+
         return (
             "Sen ReYMeN, otonom bir yazilim ajanisin. "
             "Hedefe odaklan, araclari kullan, Turkce yaz. "
@@ -1250,6 +1257,7 @@ class ConversationLoop:
             "  | deger1 | deger2 |\n"
             "  Altta yorum satiri.\n"
             f"{self._profil_bilgisi_al()}"
+            f"{skill_context}"
         )
 
     def _profil_bilgisi_al(self) -> str:

@@ -352,6 +352,216 @@ async def sandbox_sayfasi(request: Request):
     )
 
 
+@app.get("/security", response_class=HTMLResponse)
+async def security_sayfasi(request: Request):
+    """Guvenlik yonetim sayfasi — sandbox, firewall, karantina."""
+    return templates.TemplateResponse(
+        request, "security.html", {}
+    )
+
+
+# ---------------------------------------------------------------------------
+# API — Security (Guvenlik)
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/security/durum")
+async def api_security_durum():
+    """Guvenlik genel durum HTML karti."""
+    html = []
+
+    try:
+        from reymen.guvenlik.docker_sandbox import (
+            sandbox_durum, DOCKER_MEVCUT, IMAGE_MEVCUT,
+            SUBPROCESS_SANDBOX_OK, NETWORK_RESTRICTION_OK,
+        )
+
+        durum = sandbox_durum()
+        docker = durum.get("docker", {})
+
+        # Docker Sandbox
+        d_ikon = "🟢" if docker.get("docker_mevcut") else "🔴"
+        i_ikon = "🟢" if docker.get("image_mevcut") else "🟡"
+        sp_ikon = "🟢" if SUBPROCESS_SANDBOX_OK else "🔴"
+
+        html.append(f'<div class="card"><h3>🏖️ Docker Sandbox</h3>')
+        html.append(f'<div class="flex">{d_ikon} Docker: {"mevcut" if docker.get("docker_mevcut") else "yok"}</div>')
+        html.append(f'<div class="flex">{i_ikon} Image: {"build edilmis" if docker.get("image_mevcut") else "build edilmemis"}</div>')
+        html.append(f'<div class="flex">{sp_ikon} Subprocess: {"hazir" if SUBPROCESS_SANDBOX_OK else "yok"}</div>')
+        html.append('</div>')
+
+    except ImportError:
+        html.append('<div class="card"><h3>🏖️ Docker Sandbox</h3><div class="gri">Sandbox modulu yuklu degil</div></div>')
+    except Exception as e:
+        html.append(f'<div class="card"><h3>🏖️ Docker Sandbox</h3><div class="tag-no">Hata: {e}</div></div>')
+
+    try:
+        from reymen.guvenlik.network_restriction import _VARSAYILAN_NETWORK as nr
+
+        durum = nr.durum
+        aktif_ikon = "🟢" if durum['aktif'] else "🔴"
+        html.append(f'<div class="card"><h3>🛡️ Network Restriction</h3>')
+        html.append(f'<div class="flex">{aktif_ikon} Durum: {"AKTIF" if durum["aktif"] else "PASIF"}</div>')
+        html.append(f'<div class="flex">🖥️ Sistem: {durum["sistem"]}</div>')
+        html.append(f'<div class="flex">🏠 Izinli: {", ".join(durum["her_zaman_izinli"])}</div>')
+        html.append(f'<div class="flex">📋 Kural: {durum["eklenen_kurallar"]}</div>')
+        html.append(f'<div class="flex">🌐 Domain: {durum["eklenen_domainler"]} adet</div>')
+        if durum["baslangic"]:
+            html.append(f'<div class="flex gri">⏰ Baslangic: {durum["baslangic"]}</div>')
+        html.append('</div>')
+
+    except ImportError:
+        html.append('<div class="card"><h3>🛡️ Network Restriction</h3><div class="gri">Modul yuklu degil</div></div>')
+    except Exception as e:
+        html.append(f'<div class="card"><h3>🛡️ Network Restriction</h3><div class="tag-no">Hata: {e}</div></div>')
+
+    try:
+        from reymen_cli.quarantine import KARANTINA_DIZIN
+        if KARANTINA_DIZIN.exists():
+            karantina_liste = [f.name for f in KARANTINA_DIZIN.iterdir()]
+            karantina_say = len(karantina_liste)
+        else:
+            karantina_say = 0
+        html.append(f'<div class="card"><h3>📦 Karantina</h3>')
+        q_ikon = "🟢" if karantina_say == 0 else "🟡"
+        html.append(f'<div class="flex">{q_ikon} Dosya Sayisi: {karantina_say}</div>')
+        html.append(f'<div class="flex">📁 Dizin: {KARANTINA_DIZIN}</div>')
+        html.append('</div>')
+    except Exception:
+        html.append('<div class="card"><h3>📦 Karantina</h3><div class="gri">Bilgi alinamadi</div></div>')
+
+    return HTMLResponse(content="\n".join(html))
+
+
+@app.get("/api/security/sandbox/status")
+async def api_security_sandbox_status():
+    """Docker sandbox ozel durum HTML."""
+    try:
+        from reymen.guvenlik.docker_sandbox import (
+            sandbox_durum_text, DOCKER_MEVCUT, IMAGE_MEVCUT,
+        )
+        return HTMLResponse(content=f"<pre>{sandbox_durum_text()}</pre>")
+    except ImportError:
+        return HTMLResponse(content='<div class="gri">Sandbox modulu yuklu degil</div>')
+
+
+@app.post("/api/security/sandbox/build")
+async def api_security_sandbox_build():
+    """Docker sandbox image build et."""
+    try:
+        from reymen.guvenlik.docker_sandbox import docker_image_build, DOCKER_MEVCUT
+        if not DOCKER_MEVCUT:
+            return HTMLResponse(content='<div class="alert alert-error">❌ Docker yuklu degil</div>')
+        sonuc = docker_image_build(zorla=True)
+        if "build edildi" in sonuc:
+            return HTMLResponse(content=f'<div class="alert alert-success">{sonuc}</div>')
+        return HTMLResponse(content=f'<div class="alert alert-warning">{sonuc}</div>')
+    except ImportError:
+        return HTMLResponse(content='<div class="alert alert-error">❌ Sandbox modulu yuklu degil</div>')
+    except Exception as e:
+        return HTMLResponse(content=f'<div class="alert alert-error">❌ {e}</div>')
+
+
+@app.get("/api/security/firewall/status")
+async def api_security_firewall_status():
+    """Firewall durum HTML."""
+    try:
+        from reymen.guvenlik.network_restriction import _VARSAYILAN_NETWORK as nr
+        durum = nr.durum
+        html = []
+        aktif_ikon = "🟢" if durum['aktif'] else "🔴"
+        html.append(f'<div class="flex">{aktif_ikon} <b>Durum:</b> {"AKTIF" if durum["aktif"] else "PASIF"}</div>')
+        html.append(f'<div class="flex">🖥️ <b>Sistem:</b> {durum["sistem"]}</div>')
+        html.append(f'<div class="flex">🏠 <b>Izinli IP:</b> {", ".join(durum["her_zaman_izinli"])}</div>')
+        html.append(f'<div class="flex">📋 <b>Kural Sayisi:</b> {durum["eklenen_kurallar"]}</div>')
+        html.append(f'<div class="flex">🌐 <b>Domain Engelleme:</b> {durum["eklenen_domainler"]} adet</div>')
+        if durum["baslangic"]:
+            html.append(f'<div class="flex gri"><b>Baslangic:</b> {durum["baslangic"]}</div>')
+        return HTMLResponse(content="\n".join(html))
+    except ImportError:
+        return HTMLResponse(content='<div class="gri">Firewall modulu yuklu degil</div>')
+    except Exception as e:
+        return HTMLResponse(content=f'<div class="gri">Hata: {e}</div>')
+
+
+@app.post("/api/security/firewall/apply")
+async def api_security_firewall_apply(request: Request):
+    """Firewall kisitlamasini uygula."""
+    form = await request.form()
+    allowlist_str = form.get("allowlist", "").strip()
+    block_domains = form.get("block_domains", "false").strip() == "true"
+
+    allowlist = [x.strip() for x in allowlist_str.split(",") if x.strip()]
+    allowlist.append("127.0.0.1")
+
+    try:
+        from reymen.guvenlik.network_restriction import _VARSAYILAN_NETWORK as nr
+        sonuc = nr.apply(allowlist=allowlist, block_domainler=block_domains)
+        if sonuc.get("basarili"):
+            return HTMLResponse(content=f'<div class="alert alert-success">✅ {sonuc["mesaj"]}</div>')
+        return HTMLResponse(content=f'<div class="alert alert-warning">⚠️ {sonuc["mesaj"]}</div>')
+    except ImportError:
+        return HTMLResponse(content='<div class="alert alert-error">❌ Firewall modulu yuklu degil</div>')
+    except Exception as e:
+        return HTMLResponse(content=f'<div class="alert alert-error">❌ {e}</div>')
+
+
+@app.post("/api/security/firewall/remove")
+async def api_security_firewall_remove():
+    """Firewall kisitlamasini kaldir."""
+    try:
+        from reymen.guvenlik.network_restriction import _VARSAYILAN_NETWORK as nr
+        sonuc = nr.remove()
+        if sonuc.get("basarili"):
+            return HTMLResponse(content=f'<div class="alert alert-success">✅ {sonuc["mesaj"]}</div>')
+        return HTMLResponse(content=f'<div class="alert alert-warning">⚠️ {sonuc["mesaj"]}</div>')
+    except ImportError:
+        return HTMLResponse(content='<div class="alert alert-error">❌ Firewall modulu yuklu degil</div>')
+    except Exception as e:
+        return HTMLResponse(content=f'<div class="alert alert-error">❌ {e}</div>')
+
+
+@app.get("/api/security/quarantine")
+async def api_security_quarantine():
+    """Karantina listesi HTML."""
+    try:
+        from reymen_cli.quarantine import KARANTINA_DIZIN
+        if not KARANTINA_DIZIN.exists():
+            return HTMLResponse(content='<div class="gri">📦 Karantina bos</div>')
+
+        kayitlar = list(KARANTINA_DIZIN.iterdir())
+        if not kayitlar:
+            return HTMLResponse(content='<div class="gri">📦 Karantina bos</div>')
+
+        html = ['<table class="table"><tr><th>#</th><th>Dosya</th><th>Boyut</th><th>Tarih</th></tr>']
+        for i, f in enumerate(sorted(kayitlar, reverse=True)[:50], 1):
+            boyut = f.stat().st_size
+            tarih = datetime.fromtimestamp(f.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
+            html.append(f"<tr><td>{i}</td><td>{f.name}</td><td>{boyut}B</td><td class='gri'>{tarih}</td></tr>")
+        html.append("</table>")
+        return HTMLResponse(content="\n".join(html))
+    except ImportError:
+        return HTMLResponse(content='<div class="gri">Karantina modulu yuklu degil</div>')
+    except Exception as e:
+        return HTMLResponse(content=f'<div class="gri">Hata: {e}</div>')
+
+
+@app.post("/api/security/quarantine/clean")
+async def api_security_quarantine_clean():
+    """Karantinayi temizle."""
+    try:
+        from reymen_cli.quarantine import KARANTINA_DIZIN
+        import shutil
+        if KARANTINA_DIZIN.exists():
+            shutil.rmtree(str(KARANTINA_DIZIN))
+            return HTMLResponse(content='<div class="alert alert-success">🧹 Karantina temizlendi</div>')
+        return HTMLResponse(content='<div class="gri">Karantina zaten bos</div>')
+    except ImportError:
+        return HTMLResponse(content='<div class="alert alert-error">❌ Karantina modulu yuklu degil</div>')
+    except Exception as e:
+        return HTMLResponse(content=f'<div class="alert alert-error">❌ {e}</div>')
+
+
 @app.get("/kalite", response_class=HTMLResponse)
 async def kalite_sayfasi(request: Request):
     return templates.TemplateResponse(
@@ -495,6 +705,76 @@ async def sistem_sayfasi(request: Request):
 
 
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# API — Görsel Üretim JSON (/api/hermes/media)
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/hermes/media/backends")
+async def api_media_backends():
+    """JSON: Kayıtlı görsel üretim backend'leri."""
+    try:
+        from reymen.arac.image_gen_engine import image_gen_engine_listele
+        durum_text = image_gen_engine_listele()
+        backends = []
+        for line in durum_text.split("\n"):
+            line = line.strip()
+            if not line:
+                continue
+            hazir = "hazir" in line
+            backends.append({
+                "text": line,
+                "ready": hazir,
+            })
+        return JSONResponse({"backends": backends})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/api/hermes/media/generate")
+async def api_media_generate(request: Request):
+    """JSON: Görsel üret."""
+    try:
+        data = await request.json()
+    except Exception:
+        data = await request.form()
+
+    prompt = data.get("prompt", "").strip() if isinstance(data, dict) else ""
+    en = str(data.get("en", "1024")) if isinstance(data, dict) else "1024"
+    boy = str(data.get("boy", "1024")) if isinstance(data, dict) else "1024"
+    backend = str(data.get("backend", "")) if isinstance(data, dict) else ""
+
+    if not prompt:
+        return JSONResponse({"error": "Prompt boş olamaz"}, status_code=400)
+
+    try:
+        from reymen.arac.image_gen_engine import resim_olustur
+        sonuc = resim_olustur(prompt=prompt, en=en, boy=boy, backend=backend)
+
+        # Parse MEDIA blok
+        import re
+        img_url = ""
+        aciklama = ""
+        hata = sonuc if ("Hata" in sonuc) else ""
+
+        src_match = re.search(r'src="([^\"]+)"', sonuc)
+        if src_match:
+            img_url = src_match.group(1)
+        aciklama_match = re.search(r'\[MEDIA[^\]]*\][\s\S]*?\n(.+?)\n\[/MEDIA\]', sonuc)
+        if aciklama_match:
+            aciklama = aciklama_match.group(1)
+
+        return JSONResponse({
+            "success": bool(img_url),
+            "image_url": img_url,
+            "description": aciklama,
+            "raw": sonuc[:500],
+            "error": hata if not img_url else "",
+        })
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
 # Routes — Görsel Üretim (/media)
 # ---------------------------------------------------------------------------
 

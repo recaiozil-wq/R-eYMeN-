@@ -111,9 +111,9 @@ class PlaywrightMCPEngine:
         return str(yanit.get("result", {}))
 
     def sayfa_basligi(self) -> str:
-        """Sayfa basligini al."""
+        """Sayfa basligini al (browser_snapshot ile)."""
         yanit = self._json_rpc("tools/call", {
-            "name": "browser_get_title",
+            "name": "browser_snapshot",
             "arguments": {},
         })
         return str(yanit.get("result", {}))
