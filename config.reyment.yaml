@@ -1,0 +1,7 @@
+# config.reyment.yaml — ReYMeN ana profil override
+# Bu dosya reyment profili aktifken otomatik yuklenir.
+# Buradaki degerler config.yaml'daki reyment profil degerlerini ezer.
+
+# Ornek: farkli bir model kullanmak icin:
+# default_model: "deepseek-v3"
+# default_provider: "deepseek"

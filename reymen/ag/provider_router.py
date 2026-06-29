@@ -232,6 +232,69 @@ class SaglayiciYonlendirici:
 
         return sorted(zincir, key=skor)
 
+    # ── CLI/Uyumluluk arayüzü ──────────────────────────────────────────────
+
+    def saglayici_listele(self) -> list[str]:
+        """Kayıtlı tüm provider adlarını döndür."""
+        with self._lock:
+            return list(self._durumlar.keys())
+
+    def kara_listede_mi(self, ad: str) -> bool:
+        """Provider kara listede mi? (Circuit breaker aktif mi?)
+
+        Args:
+            ad: Provider adı
+
+        Returns:
+            True = kara listede (kullanılamaz), False = kullanılabilir
+        """
+        with self._lock:
+            durum = self._durumlar.get(ad)
+            if durum is None:
+                return False  # bilinmeyen provider kara listede sayılmaz
+            if durum.kara_liste_saati == 0:
+                return False
+            # Kara listedeyse süre dolmuş mu kontrol et
+            return (time.monotonic() - durum.kara_liste_saati) <= _BREAKER_BEKLEME_SN
+
+    def liste(self) -> list[str]:
+        """CLI uyumlu: kayıtlı provider listesi (saglayici_listele alias)."""
+        return self.saglayici_listele()
+
+    def aktif_sayisi(self) -> int:
+        """CLI uyumlu: şu an kullanılabilir (kara listede olmayan) kaç provider var?"""
+        sayi = 0
+        with self._lock:
+            for durum in self._durumlar.values():
+                if durum.aktif:
+                    sayi += 1
+        return sayi
+
+    def failover_chain(self) -> list[str]:
+        """CLI uyumlu: kayıtlı provider'ların failover sırası (skorlama bazlı).
+
+        Provider'ları sirala() mantığına göre sıralar — önce yerel,
+        sonra API provider'ları, kara listedekiler en sona atılır.
+        """
+        with self._lock:
+            adlar = list(self._durumlar.keys())
+
+        # Skorlama: önce yerel, sonra API, kara listedekiler en son
+        def _siralama_skoru(ad: str) -> float:
+            durum = self._durumlar.get(ad)
+            if durum is None:
+                return 100.0
+            if not durum.aktif:
+                return 999.0  # kara listede = en son
+            s = 0.0
+            if ad in _LOCAL_PROVIDERS:
+                s += 10.0
+            if durum.ping_canli:
+                s += 15.0
+            return -s
+
+        return sorted(adlar, key=_siralama_skoru)
+
 
 # ── Singleton ──────────────────────────────────────────────────────────────────
 

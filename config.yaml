@@ -10,6 +10,34 @@ general:
   max_turns: 15
   secure_binding: true
 
+# ── Profiller (Multi-Profile Sistemi) ─────────────────────────────────────────
+# Her profil farklı provider/model kullanabilir.
+# Detaylı override icin config.reyment.yaml, config.dev.yaml vb. dosyalar
+# proje kokunde olusturulabilir. Bu dosyalar profil degistiginde otomatik yuklenir.
+profiles:
+  reyment:
+    aciklama: "Ana ReYMeN profili — varsayilan"
+    default_provider: "deepseek"
+    default_model: "deepseek-v4-flash"
+  dev:
+    aciklama: "Gelistirme profili — yerel modeller"
+    default_provider: "lmstudio"
+    default_model: "cognitivecomputations.dolphin3.0-llama3.1-8b"
+  test:
+    aciklama: "Test profili — hizli ve ucuz modeller"
+    default_provider: "openrouter"
+    default_model: "openrouter/auto"
+    max_turns: 30
+  prod:
+    aciklama: "Uretim profili — guvenilir saglayicilar"
+    default_provider: "deepseek"
+    default_model: "deepseek-v4-flash"
+    providers:
+      deepseek:
+        base_url: "https://api.deepseek.com"
+      openai:
+        base_url: "https://api.openai.com"
+
 # ── Kisilikler (/personality komutu icin) ─────────────────────────────────────
 agent:
   personalities:
@@ -128,6 +156,57 @@ auxiliary:
     provider: "lmstudio"
     model: "cognitivecomputations.dolphin3.0-llama3.1-8b"
     base_url: "http://localhost:1234"
+
+# ── Model→Provider Eşleme ─────────────────────────────────────────────────────
+# Hangi model hangi provider'da çalışır? Failover zinciri sırası.
+model_providers:
+  # DeepSeek
+  deepseek-v4-flash:        "deepseek"
+  deepseek-v3:              "deepseek"
+  deepseek-chat:            "deepseek"
+  deepseek-reasoner:        "deepseek"
+  deepseek-r1:              "deepseek"
+  # OpenAI
+  gpt-4o:                   "openai"
+  gpt-4o-mini:              "openai"
+  gpt-4-turbo:              "openai"
+  gpt-3.5-turbo:            "openai"
+  o1:                        "openai"
+  o3-mini:                   "openai"
+  # Anthropic
+  claude-sonnet-4:          "anthropic"
+  claude-sonnet-4-20250514: "anthropic"
+  claude-3-5-sonnet:        "anthropic"
+  claude-3-opus:            "anthropic"
+  claude-3-haiku:           "anthropic"
+  # OpenRouter
+  openrouter/auto:          "openrouter"
+  openrouter/deepseek:      "openrouter"
+  openrouter/llama:         "openrouter"
+  # Groq
+  groq/llama3:              "groq"
+  groq/mixtral:             "groq"
+  groq/deepseek:            "groq"
+  # Azure OpenAI
+  azure/gpt-4o:             "azure"
+  # Gemini
+  gemini-pro:               "gemini"
+  gemini-1.5-pro:           "gemini"
+  gemini-1.5-flash:         "gemini"
+  # LM Studio
+  lm-studio/default:        "lmstudio"
+  local-model:              "lmstudio"
+  # Amazon Bedrock
+  bedrock/claude:           "bedrock"
+
+# ── Failover Zinciri (öncelik sırası) ────────────────────────────────────────
+# Her grup aynı öncelik seviyesindeki provider'ları temsil eder.
+# Bir gruptaki tüm provider'lar başarısız olursa, sonraki gruba geçilir.
+failover_zinciri:
+  - ["lmstudio"]                         # 1. tercih: yerel
+  - ["deepseek", "openrouter"]           # 2. tercih: ana API'ler
+  - ["openai", "anthropic"]              # 3. tercih: alternatif API'ler
+  - ["groq", "gemini"]                   # 4. tercih: son çare
 
 # ── Telegram ─────────────────────────────────────────────────────────────────
 telegram:

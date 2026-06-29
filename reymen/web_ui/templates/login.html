@@ -17,6 +17,16 @@
         </div>
         <button type="submit" class="btn btn-primary btn-full">Giriş</button>
     </form>
+    <hr style="margin:1.5rem 0;border-color:var(--border);">
+    <div class="oauth-buttons">
+        <p style="margin-bottom:0.75rem;text-align:center;opacity:0.7;">— veya —</p>
+        <a href="/auth/login/google" class="btn btn-oauth btn-oauth-google btn-full" style="margin-bottom:0.5rem;">
+            <span style="font-weight:bold;margin-right:0.5rem;">G</span> Google ile Giriş
+        </a>
+        <a href="/auth/login/discord" class="btn btn-oauth btn-oauth-discord btn-full">
+            <span style="font-weight:bold;margin-right:0.5rem;">D</span> Discord ile Giriş
+        </a>
+    </div>
     <p class="login-hint">Varsayılan: admin / reymen</p>
 </div>
 {% endblock %}

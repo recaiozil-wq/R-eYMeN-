@@ -192,6 +192,41 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
     log_cfg = yaml_cfg.get("logging", {})
     result["logging"] = log_cfg
 
+    # ── Profil yukleme (multi-profile sistemi) ─────────────────────
+    try:
+        from reymen.sistem.profile_manager import get_profile_manager
+        pm = get_profile_manager(str(yaml_path))
+        aktif_profil = pm.aktif_profil_al()
+        profil_bilgi = pm.aktif_profil_bilgisi()
+        result["active_profile"] = aktif_profil
+
+        # Profil override'larini uygula
+        if profil_bilgi:
+            if profil_bilgi.get("default_provider"):
+                result["default_provider"] = profil_bilgi["default_provider"]
+            if profil_bilgi.get("default_model"):
+                result["default_model"] = profil_bilgi["default_model"]
+            if profil_bilgi.get("max_turns"):
+                result["max_turns"] = int(profil_bilgi["max_turns"])
+
+            # Profil-specific provider override'lari
+            profil_providers = profil_bilgi.get("providers", {})
+            if profil_providers:
+                for pname, pcfg in profil_providers.items():
+                    if pname in result.get("providers", {}):
+                        if isinstance(pcfg, dict):
+                            result["providers"][pname].update(pcfg)
+                    else:
+                        result.setdefault("providers", {})[pname] = pcfg
+
+        logger.info(f"Aktif profil: {aktif_profil}")
+    except ImportError:
+        result["active_profile"] = "reyment"
+        logger.debug("profile_manager modulu bulunamadi, varsayilan profil kullaniliyor")
+    except Exception as e:
+        result["active_profile"] = "reyment"
+        logger.warning(f"Profil yukleme hatasi: {e}")
+
     return result
 
 

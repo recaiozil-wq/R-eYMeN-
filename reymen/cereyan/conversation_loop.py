@@ -123,6 +123,25 @@ except ImportError:
     _SKILL_ACTIVATOR = None
     _SKILL_ACTIVATOR_AKTIF = False
 
+# ── Delegasyon Sistemi (P2) — Subagent + görev ayrıştırma ─────
+try:
+    from reymen.ag.delegasyon import (
+        DelegasyonSistemi as _DelegasyonSistemi,
+        sistem_al as _delegasyon_sistemi_al,
+        konusma_dongusu_hook_bul as _delegasyon_hook_bul,
+    )
+    _DELEGASYON_AKTIF = True
+    # Hook'u otomatik kaydet
+    try:
+        _delegasyon_hook = _delegasyon_hook_bul()
+    except Exception:
+        _delegasyon_hook = None
+except ImportError:
+    _DelegasyonSistemi = None
+    _delegasyon_sistemi_al = None
+    _delegasyon_hook_bul = None
+    _DELEGASYON_AKTIF = False
+
 # ── Hata sınıflandırıcı ve mesaj tamirci ─────────────────────────
 try:
     from reymen.cereyan.hata_siniflandirici import (
@@ -626,6 +645,31 @@ class ConversationLoop:
                 "content": f"[Baglam]\n{baglam_str}",
             })
         self._konusma_gecmisi.append({"role": "user", "content": hedef})
+
+        # -- 3c. DELEGASYON KONTROL (P2) — Subagent gerekli mi? ----------
+        try:
+            delegasyon_sonuc = self._delegasyon_kontrol(hedef)
+            if delegasyon_sonuc and delegasyon_sonuc.get("basarili"):
+                sonuc["basarili"] = True
+                sonuc["yanit"] = delegasyon_sonuc["yanit"]
+                sonuc["kaynak"] = f"delegasyon_{delegasyon_sonuc['mod']}"
+                sonuc["delegasyon"] = delegasyon_sonuc
+                sonuc["tur"] = 1
+                sonuc["sure"] = round(time.time() - baslama, 2)
+                self._durum = "tamamlandi"
+                log.info(
+                    "[%s] Delegasyon basarili: mod=%s",
+                    task_id, delegasyon_sonuc["mod"],
+                )
+                # Session kapat ve dön
+                if _storage and session_id:
+                    try:
+                        _storage.session_bitir(session_id, end_reason="completed")
+                    except Exception:
+                        pass
+                return sonuc
+        except Exception as _de:
+            log.warning("[%s] Delegasyon kontrol hatasi: %s", task_id, _de)
 
         # -- 3b. SESSION CONTEXT INJECTION + SEARCH ------------------------
         if _storage and session_id:
@@ -1195,6 +1239,139 @@ class ConversationLoop:
         sonuc["dogrulama_uyarisi"] = "hepsi_bos"
         log.warning("[%s] Dogrulama: tum adaylar bos/hatali", task_id)
         return sonuc
+
+    # ── Delegasyon (P2) — Subagent yönetimi ──────────────────────
+
+    def _delegasyon_kontrol(self, hedef: str) -> Optional[Dict[str, Any]]:
+        """
+        Hedef metnini kontrol eder, delegasyon gerekiyorsa subagent
+        oluşturup çalıştırır.
+
+        Delegasyon ipuçları:
+            - "delege et", "subagent", "alt ajan", "görev devret"
+            - "paralel", "aynı anda", "zincir"
+            - Numaralı liste + "paralel" veya "zincir" kelimeleri
+
+        Returns:
+            Delegasyon sonucu dict veya None (delegasyon gerekmiyorsa)
+        """
+        if not _DELEGASYON_AKTIF:
+            return None
+
+        try:
+            # Lazy import — GorevAyrıştırıcı
+            from reymen.ag.delegasyon import GorevAyrıştırıcı
+            
+            hedef_lower = hedef.lower()
+
+            # Delegasyon tetikleyicileri
+            tek_tetik = ["delege et", "subagent çalıştır", "alt ajan", "görev devret"]
+            paralel_tetik = ["paralel", "aynı anda", "eş zamanlı", "beraber"]
+            zincir_tetik = ["zincir", "sırayla", "ardışık", "adım adım"]
+
+            # Mod belirle
+            mod = None
+            for t in tek_tetik:
+                if t in hedef_lower:
+                    mod = "TEK"
+                    break
+            if not mod:
+                for t in zincir_tetik:
+                    if t in hedef_lower:
+                        mod = "ZINCIR"
+                        break
+            if not mod:
+                for t in paralel_tetik:
+                    if t in hedef_lower:
+                        mod = "PARALEL"
+                        break
+
+            if not mod:
+                return None  # Delegasyon gerekmiyor
+
+            sistem = _delegasyon_sistemi_al()
+            if sistem is None:
+                return None
+
+            if mod == "TEK":
+                agent = sistem.delege_et(goal=hedef)
+                if agent.basarili_mi():
+                    return {
+                        "basarili": True,
+                        "mod": "TEK",
+                        "yanit": agent.result,
+                        "agent_id": agent.id,
+                        "sure": agent.sure,
+                    }
+                return {
+                    "basarili": False,
+                    "mod": "TEK",
+                    "hata": agent.error,
+                    "agent_id": agent.id,
+                }
+
+            elif mod == "PARALEL":
+                alt_gorevler = GorevAyrıştırıcı.ayir(hedef)
+                if len(alt_gorevler) >= 2:
+                    gorev_dicts = [
+                        {"goal": a.goal, "context": a.context}
+                        for a in alt_gorevler[:3]
+                    ]
+                    agentler = sistem.paralel_delege(gorev_dicts)
+                    basarili = sum(1 for a in agentler if a.basarili_mi())
+
+                    if basarili > 0:
+                        yanit_parts = [
+                            f"[Paralel {basarili}/{len(agentler)} başarılı]"
+                        ]
+                        for a in agentler:
+                            ikon = "✅" if a.basarili_mi() else "❌"
+                            yanit_parts.append(f"{ikon} {a.goal[:50]}: {a.result[:200]}")
+                        return {
+                            "basarili": True,
+                            "mod": "PARALEL",
+                            "yanit": "\n".join(yanit_parts),
+                            "agentler": [a.id for a in agentler],
+                        }
+                else:
+                    # Paralel için yeterli görev yok, TEK dene
+                    agent = sistem.delege_et(goal=hedef)
+                    if agent.basarili_mi():
+                        return {
+                            "basarili": True,
+                            "mod": "TEK",
+                            "yanit": agent.result,
+                            "agent_id": agent.id,
+                        }
+
+            elif mod == "ZINCIR":
+                alt_gorevler = GorevAyrıştırıcı.ayir(hedef)
+                if len(alt_gorevler) >= 2:
+                    adim_dicts = [
+                        {"goal": a.goal, "context": a.context}
+                        for a in alt_gorevler
+                    ]
+                    agentler = sistem.zincir_delege(adim_dicts)
+                    basarili = sum(1 for a in agentler if a.basarili_mi())
+
+                    yanit_parts = [
+                        f"[Zincir {basarili}/{len(agentler)} adım başarılı]"
+                    ]
+                    for i, a in enumerate(agentler, 1):
+                        ikon = "✅" if a.basarili_mi() else "❌"
+                        yanit_parts.append(f"Adım {i}: {ikon} {a.result[:200]}")
+                    return {
+                        "basarili": basarili > 0,
+                        "mod": "ZINCIR",
+                        "yanit": "\n".join(yanit_parts),
+                        "agentler": [a.id for a in agentler],
+                    }
+
+            return None
+
+        except Exception as e:
+            logger.warning(f"[Delegasyon] Kontrol hatası: {e}")
+            return None
 
     def _web_ara(self, sorgu: str, maks_sonuc: int = 3) -> Optional[str]:
         '''Web arama yap — SearchDispatcher uzerinden (coklu back-end).

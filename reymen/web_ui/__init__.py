@@ -36,6 +36,13 @@ from reymen.web_ui.auth import (
     InvalidCredentialsError, ProviderError,
 )
 from reymen.web_ui.module_discovery import ModulTarayici, modul_kategorileri
+
+# OAuth2
+from reymen.guvenlik.oauth2 import (
+    OAuth2Provider, OAuth2Manager, OAuth2Token, OAuth2UserInfo,
+    OAuth2ProviderError, init_oauth2_providers,
+    oauth2_registry, oauth2_manager,
+)
 from reymen.web_ui.process_manager import ProcessManager
 from reymen.web_ui.log_stream import LogStreamer, log_kuyrugu_oku
 
@@ -250,6 +257,113 @@ async def logout(request: Request):
     response.delete_cookie("hermes_session_at", path="/")
     response.delete_cookie("hermes_session_rt", path="/")
     return response
+
+
+# ---------------------------------------------------------------------------
+# Routes — OAuth2 Login (Google / Discord)
+# ---------------------------------------------------------------------------
+
+
+@app.get("/auth/login/{provider}")
+async def oauth_login(provider: str, request: Request, response: Response):
+    """Kullanıcıyı OAuth2 provider'ın onay sayfasına yönlendir."""
+    oauth_provider = oauth2_registry.get(provider)
+    if not oauth_provider:
+        return HTMLResponse(
+            content=f'<div class="alert alert-error">❌ Bilinmeyen OAuth2 provider: {provider}</div>',
+            status_code=404,
+        )
+    # State parametresini signed cookie'da sakla (CSRF koruması)
+    import secrets
+    state = secrets.token_urlsafe(16)
+
+    auth_url = oauth_provider.get_auth_url(state=state)
+    response = RedirectResponse(url=auth_url)
+    response.set_cookie(
+        "oauth_state", state,
+        max_age=600, httponly=True, samesite="lax",
+        path="/auth/callback/",
+    )
+    return response
+
+
+@app.get("/auth/callback/{provider}")
+async def oauth_callback(provider: str, request: Request,
+                         code: str = "", state: str = "",
+                         error: str = ""):
+    """OAuth2 callback — authorization code ile token al, Session oluştur."""
+    if error:
+        logger.warning("[OAuth2] %s callback hatasi: %s", provider, error)
+        return RedirectResponse(url=f"/login?hata={urllib.parse.quote(error)}")
+
+    if not code:
+        return RedirectResponse(url="/login?hata=authorization_code_bulunamadi")
+
+    # State doğrulama (CSRF) — cookie'deki state ile URL'deki state karşılaştır
+    saved_state = request.cookies.get("oauth_state", "")
+    if saved_state and state and saved_state != state:
+        logger.warning("[OAuth2] %s state uyusmazligi", provider)
+        return RedirectResponse(url="/login?hata=state_uyusmazligi")
+
+    try:
+        # Token al
+        token = oauth2_manager.exchange_code(provider, code)
+
+        # Kullanıcı bilgisini al
+        user_info = oauth2_manager.get_user_info(provider, token.access_token)
+
+        # Kullanıcı adını belirle (email yoksa provider_id kullan)
+        username = user_info.email or user_info.provider_id
+        if not username:
+            username = f"{provider}_{user_info.provider_id}"
+
+        # Local user varsa rolünü al, yoksa viewer
+        role = user_manager.get_user_role(username) or "viewer"
+
+        # JWT Session oluştur (web_ui.auth ile uyumlu)
+        at = token_manager.create(username, role=role, provider=f"oauth2:{provider}")
+        rt = token_manager.create_refresh(username)
+
+        session = Session(
+            user_id=username,
+            display_name=user_info.display_name or username,
+            role=role,
+            provider=f"oauth2:{provider}",
+            expires_at=int(time.time()) + token_manager.config.token_expiry,
+            access_token=at,
+            refresh_token=rt,
+        )
+
+        audit_log(
+            AuditEvent.LOGIN_SUCCESS,
+            user_id=session.user_id,
+            provider=session.provider,
+            ip=request.client.host if request.client else "",
+        )
+
+        response = RedirectResponse(url="/", status_code=302)
+        response.set_cookie(
+            "hermes_session_at", session.access_token,
+            max_age=token_manager.expires_in(session.access_token),
+            httponly=True, samesite="lax",
+        )
+        if session.refresh_token:
+            response.set_cookie(
+                "hermes_session_rt", session.refresh_token,
+                max_age=604800, httponly=True, samesite="lax",
+            )
+        return response
+
+    except OAuth2ProviderError as e:
+        logger.error("[OAuth2] %s hatasi: %s", provider, e)
+        return RedirectResponse(
+            url=f"/login?hata={urllib.parse.quote(str(e))}"
+        )
+    except Exception as e:
+        logger.exception("[OAuth2] %s beklenmeyen hata", provider)
+        return RedirectResponse(
+            url=f"/login?hata={urllib.parse.quote(f'{type(e).__name__}: {e}')}"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -2785,6 +2899,236 @@ def _konusma_mesajlari_getir(konusma_id: str) -> list[dict]:
         return [{"rol": "user", "icerik": note_path.read_text()[:2000], "zaman": ""}]
     return []
 
+
+# ---------------------------------------------------------------------------
+# Delegasyon Yönetimi — Routes
+# ---------------------------------------------------------------------------
+
+
+@app.get("/delegasyon", response_class=HTMLResponse)
+async def delegasyon_sayfasi(request: Request):
+    """Delegasyon yönetim sayfası."""
+    return templates.TemplateResponse(
+        request, "delegation.html", {}
+    )
+
+
+@app.get("/api/delegation/status")
+async def api_delegation_status(request: Request, detay: bool = False):
+    """Delegasyon durumunu HTML olarak döndürür."""
+    try:
+        from reymen.ag.delegation import get_manager
+
+        manager = get_manager()
+        stats = manager.results()
+
+        if stats["total"] == 0:
+            html = [
+                '<div class="card" style="text-align:center;padding:2rem;">',
+                '<h3>🧠 Delegasyon Sistemi</h3>',
+                '<div class="gri" style="margin:1rem 0;">Henüz hiç alt-ajan kaydı yok</div>',
+                '<div class="flex" style="justify-content:center;gap:1rem;">',
+                '<span>✅ Başarı: 0</span>',
+                '<span>❌ Hata: 0</span>',
+                '<span>⏳ Aktif: 0</span>',
+                '</div></div>',
+            ]
+            if detay:
+                html.append('<div class="gri" style="margin-top:1rem;">Kayıt bulunamadı</div>')
+            return HTMLResponse(content="\n".join(html))
+
+        # Özet kartı
+        html = [
+            '<div class="cards" style="display:grid;grid-template-columns:repeat(6,1fr);gap:0.5rem;">',
+            f'<div class="card" style="text-align:center;"><h3>{stats["total"]}</h3>'
+            f'<div class="gri">Toplam</div></div>',
+            f'<div class="card" style="text-align:center;"><h3 style="color:#22c55e;">{stats["success"]}</h3>'
+            f'<div class="gri">Başarılı</div></div>',
+            f'<div class="card" style="text-align:center;"><h3 style="color:#ef4444;">{stats["error"]}</h3>'
+            f'<div class="gri">Hata</div></div>',
+            f'<div class="card" style="text-align:center;"><h3 style="color:#f59e0b;">{stats["active"]}</h3>'
+            f'<div class="gri">Aktif</div></div>',
+            f'<div class="card" style="text-align:center;"><h3>%{stats["success_rate"]}</h3>'
+            f'<div class="gri">Başarı Oranı</div></div>',
+            f'<div class="card" style="text-align:center;"><h3>{stats["ortalama_sure"]}s</h3>'
+            f'<div class="gri">Ort. Süre</div></div>',
+            '</div>',
+        ]
+
+        if detay and stats.get("agents"):
+            html.extend([
+                '<div class="card" style="margin-top:1rem;">',
+                '<h3>📋 Kayıtlar</h3>',
+                '<table class="table"><thead><tr>',
+                '<th>#</th><th>ID</th><th>Hedef</th><th>Durum</th><th>Süre</th><th>İşlem</th>',
+                '</tr></thead><tbody>',
+            ])
+            for i, a in enumerate(sorted(stats["agents"], key=lambda x: x["created_at"], reverse=True)[:50], 1):
+                ikon = {"success": "✅", "error": "❌", "cancelled": "⛔", "running": "⏳", "pending": "⏸️"}.get(a["status"], "❓")
+                sure_str = f'{a["sure"]}s' if a.get("sure") else "—"
+                goal_short = a["goal"][:50] + "..." if len(a["goal"]) > 50 else a["goal"]
+                html.append(
+                    f'<tr><td>{i}</td>'
+                    f'<td><code style="font-size:0.8rem;">{a["id"][:8]}...</code></td>'
+                    f'<td>{goal_short}</td>'
+                    f'<td>{ikon} {a["status"]}</td>'
+                    f'<td>{sure_str}</td>'
+                    f'<td><button class="btn btn-sm" onclick="detayGoster(\'{a["id"]}\')">🔍</button></td>'
+                    f'</tr>'
+                )
+            html.extend(['</tbody></table></div>'])
+
+        return HTMLResponse(content="\n".join(html))
+
+    except ImportError:
+        return HTMLResponse(
+            content='<div class="alert alert-warning">⚠️ Delegasyon modülü (reymen.ag.delegation) yüklenemedi</div>'
+        )
+    except Exception as e:
+        return HTMLResponse(
+            content=f'<div class="alert alert-error">❌ Hata: {type(e).__name__}: {e}</div>'
+        )
+
+
+@app.post("/api/delegation/run")
+async def api_delegation_run(request: Request, decompose: bool = False):
+    """Delegasyon görevi çalıştır."""
+    try:
+        from reymen.ag.delegation import get_manager
+
+        form = await request.form()
+        goal = form.get("goal", "").strip()
+        context = form.get("context", "").strip()
+
+        if not goal:
+            return HTMLResponse(
+                content='<div class="alert alert-error">❌ Hedef (goal) zorunlu</div>'
+            )
+
+        manager = get_manager()
+
+        if decompose:
+            agents = manager.decompose_and_delegate(goal, context)
+            basarili = sum(1 for a in agents if a.status == "success")
+            hatali = sum(1 for a in agents if a.status == "error")
+            html = [
+                f'<div class="alert alert-success">'
+                f'✅ {len(agents)} alt-görev ayrıştırıldı ve çalıştırıldı '
+                f'(Başarılı: {basarili}, Hatalı: {hatali})'
+                f'</div>',
+            ]
+            for a in agents:
+                ikon = "✅" if a.status == "success" else "❌"
+                sure = round(a.completed_at - a.created_at, 2) if a.completed_at else "?"
+                html.append(
+                    f'<div style="margin:0.25rem 0;padding:0.25rem 0.5rem;background:#111;border-radius:4px;">'
+                    f'{ikon} <b>[{a.status[:8]}]</b> {a.goal[:80]} '
+                    f'<small class="gri">({sure}s)</small>'
+                    f'</div>'
+                )
+            return HTMLResponse(content="\n".join(html))
+        else:
+            agent = manager.delegate(goal, context)
+            sure = round(agent.completed_at - agent.created_at, 2) if agent.completed_at else "?"
+            ikon = "✅" if agent.status == "success" else "❌"
+            html = [
+                f'<div class="alert alert-success">'
+                f'{ikon} Alt-ajan tamamlandı — {agent.status} ({sure}s)'
+                f'</div>',
+                f'<div class="card"><pre style="max-height:200px;overflow-y:auto;">{agent.result[:500]}</pre></div>',
+            ]
+            return HTMLResponse(content="\n".join(html))
+
+    except ImportError:
+        return HTMLResponse(
+            content='<div class="alert alert-warning">⚠️ Delegasyon modülü yüklenemedi</div>'
+        )
+    except Exception as e:
+        return HTMLResponse(
+            content=f'<div class="alert alert-error">❌ Hata: {type(e).__name__}: {e}</div>'
+        )
+
+
+@app.post("/api/delegation/cancel")
+async def api_delegation_cancel(request: Request):
+    """Alt-ajanı iptal et."""
+    try:
+        from reymen.ag.delegation import get_manager
+
+        form = await request.form()
+        agent_id = form.get("id", "").strip()
+
+        if not agent_id:
+            return HTMLResponse(
+                content='<div class="alert alert-error">❌ Alt-ajan ID\'si zorunlu</div>'
+            )
+
+        manager = get_manager()
+        basarili = manager.cancel(agent_id)
+
+        if basarili:
+            return HTMLResponse(
+                content=f'<div class="alert alert-warning">⛔ Alt-ajan iptal edildi: {agent_id[:12]}...</div>'
+            )
+        return HTMLResponse(
+            content=f'<div class="alert alert-error">❌ İptal başarısız: {agent_id[:12]}... bulunamadı veya tamamlanmış</div>'
+        )
+
+    except ImportError:
+        return HTMLResponse(
+            content='<div class="alert alert-warning">⚠️ Delegasyon modülü yüklenemedi</div>'
+        )
+    except Exception as e:
+        return HTMLResponse(
+            content=f'<div class="alert alert-error">❌ Hata: {type(e).__name__}: {e}</div>'
+        )
+
+
+@app.post("/api/delegation/temizle")
+async def api_delegation_temizle():
+    """Tamamlanmış alt-ajanları temizle."""
+    try:
+        from reymen.ag.delegation import get_manager
+
+        manager = get_manager()
+        silinen = manager.temizle()
+
+        return HTMLResponse(
+            content=f'<div class="alert alert-success">🧹 {silinen} tamamlanmış alt-ajan temizlendi</div>'
+        )
+    except ImportError:
+        return HTMLResponse(
+            content='<div class="alert alert-warning">⚠️ Delegasyon modülü yüklenemedi</div>'
+        )
+    except Exception as e:
+        return HTMLResponse(
+            content=f'<div class="alert alert-error">❌ Hata: {type(e).__name__}: {e}</div>'
+        )
+
+
+@app.get("/api/delegation/detay")
+async def api_delegation_detay(id: str = ""):
+    """Alt-ajan detayını JSON olarak döndür."""
+    try:
+        from reymen.ag.delegation import get_manager
+
+        if not id:
+            return JSONResponse({"hata": "ID zorunlu"}, status_code=400)
+
+        manager = get_manager()
+        agent = manager.get(id)
+
+        if not agent:
+            return JSONResponse({"hata": f"Alt-ajan bulunamadı: {id[:12]}"}, status_code=404)
+
+        return agent.to_dict()
+
+    except ImportError:
+        return JSONResponse({"hata": "Delegasyon modülü yüklenemedi"}, status_code=500)
+    except Exception as e:
+        return JSONResponse({"hata": str(e)}, status_code=500)
+
+
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
@@ -2792,8 +3136,13 @@ def _konusma_mesajlari_getir(konusma_id: str) -> list[dict]:
 
 def baslat(port: int = 5000, host: str = "0.0.0.0") -> None:
     """Web UI'yi başlat."""
+    # OAuth2 provider'ları başlat (env var'larından oku)
+    redirect_base = f"http://{host}:{port}" if host != "0.0.0.0" else f"http://localhost:{port}"
+    init_oauth2_providers(redirect_base=redirect_base)
+
     print(f"🌐 ReYMeN Web UI v2: http://{host}:{port}")
     print(f"   Giriş: admin / reymen (varsayılan)")
+    print(f"   OAuth2: Google, Discord")
     print(f"   Canlı log: /logs")
     uvicorn.run(app, host=host, port=port, log_level="info")
 

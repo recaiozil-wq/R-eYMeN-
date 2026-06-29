@@ -11,7 +11,9 @@ Ozellikler:
 """
 
 import time
+import math
 import logging
+from collections import Counter
 
 logger = logging.getLogger(__name__)
 
@@ -46,15 +48,28 @@ class _BasitYedek:
             else:
                 self._kayitlar.append({"id": i, "doc": d, "meta": m or {}})
 
+    @staticmethod
+    def _counter_cosine(query_words, doc_words):
+        """Counter tabanli kosinus benzerligi (std11, ek paket yok)."""
+        if not query_words or not doc_words:
+            return 0.0
+        all_words = set(query_words.keys()) | set(doc_words.keys())
+        q_vec = [float(query_words.get(w, 0)) for w in all_words]
+        d_vec = [float(doc_words.get(w, 0)) for w in all_words]
+        dot = sum(a * b for a, b in zip(q_vec, d_vec))
+        q_norm = math.sqrt(sum(a * a for a in q_vec))
+        d_norm = math.sqrt(sum(a * a for a in d_vec))
+        if q_norm == 0 or d_norm == 0:
+            return 0.0
+        return dot / (q_norm * d_norm)
+
     def query(self, query_texts, n_results=3, **kwargs):
-        sorgu_kelimeleri = set(query_texts[0].lower().split())
+        sorgu_kelimeleri = Counter(query_texts[0].lower().split())
         skorlu = []
         for k in self._kayitlar:
-            doc_kelimeleri = set(k["doc"].lower().split())
-            ortak = len(sorgu_kelimeleri & doc_kelimeleri)
-            birlesim = len(sorgu_kelimeleri | doc_kelimeleri)
-            jaccard = ortak / birlesim if birlesim else 0
-            skorlu.append((jaccard, k))
+            doc_kelimeleri = Counter(k["doc"].lower().split())
+            benzerlik = self._counter_cosine(sorgu_kelimeleri, doc_kelimeleri)
+            skorlu.append((benzerlik, k))
         skorlu.sort(key=lambda x: x[0], reverse=True)
         secili = [k for s, k in skorlu[:n_results] if s > 0]
         return {
@@ -197,10 +212,145 @@ def basarisiz_tecrube_kaydet(collection, hedef: str, hata: str):
                    {"tur": "hata", "hedef": hedef[:80]})
 
 
+class VektorelHafiza:
+    """ChromaDB tabanli vektorel hafiza sinifi (Counter-TF-IDF yedekli).
+
+    chromadb varsa ChromaDB PersistentCollection, yoksa Counter tabanli
+    TF-IDF benzeri bellek kullanir. Ek paket gerektirmez (stdlib-only).
+    """
+
+    def __init__(self, yol="./vektor_hafizasi"):
+        self._yol = yol
+        self._collection = vektorel_hafiza_sistemini_kur(yol)
+        self._embedder = None
+
+    # ── Properties ──────────────────────────────────────────────────────
+
+    @property
+    def chromadb_available(self):
+        """ChromaDB kullanilabilir mi?"""
+        return CHROMA_AVAILABLE
+
+    @property
+    def embedder(self):
+        """Basit embedder (None — std11 surumde gomme yok)."""
+        return self._embedder
+
+    @property
+    def collection(self):
+        """Alttaki koleksiyon nesnesi (_BasitYedek veya ChromaDB koleksiyonu)."""
+        return self._collection
+
+    # ── CRUD ─────────────────────────────────────────────────────────────
+
+    def ekle(self, text: str, metadata: dict = None) -> bool:
+        """Metin ve metadata ekle / guncelle.
+
+        Args:
+            text: Kaydedilecek metin.
+            metadata: Opsiyonel metadata sozlugu.
+
+        Returns:
+            Basariliysa True, dedup veya hata durumunda False.
+        """
+        kayit_id = (
+            f"vh_{abs(hash(text)) % 1000000}_"
+            f"{int(time.time() * 1000)}"
+        )
+        return tecrube_kaydet(self._collection, kayit_id, text, metadata)
+
+    def ara(self, query: str, limit: int = 3) -> dict:
+        """Anlamsal arama yap.
+
+        Args:
+            query: Arama sorgusu.
+            limit: Kac sonuc donecegi.
+
+        Returns:
+            {
+                "success": bool,
+                "results": [
+                    {"id": str, "text": str, "metadata": dict, "score": float},
+                    ...
+                ],
+                "message": str  # Hata veya bilgi mesaji
+            }
+        """
+        try:
+            sonuc = self._collection.query(
+                query_texts=[query[:300]],
+                n_results=limit,
+            )
+            dokumanlar = sonuc.get("documents", [[]])[0]
+            metadatalar = sonuc.get("metadatas", [[]])[0]
+            idler = sonuc.get("ids", [[]])[0]
+            mesafeler = sonuc.get("distances", [[]])[0]
+
+            if not dokumanlar:
+                return {
+                    "success": False,
+                    "results": [],
+                    "message": "[Hafiza]: Ilgili tecrube bulunamadi.",
+                }
+
+            results = []
+            for i, doc in enumerate(dokumanlar):
+                score = 1 - mesafeler[i] if i < len(mesafeler) else 0.0
+                results.append({
+                    "id": idler[i] if i < len(idler) else "",
+                    "text": doc,
+                    "metadata": metadatalar[i] if i < len(metadatalar) else {},
+                    "score": round(score, 4),
+                })
+
+            # Skora gore sirala (yuksek skor once)
+            results.sort(key=lambda x: x["score"], reverse=True)
+
+            return {"success": True, "results": results, "message": ""}
+
+        except Exception as e:
+            return {
+                "success": False,
+                "results": [],
+                "message": f"[Hafiza]: Arama hatasi: {e}",
+            }
+
+    def sil(self, id: str) -> bool:
+        """ID ile kayit sil.
+
+        Args:
+            id: Silinecek kaydin ID'si.
+
+        Returns:
+            Basariliysa True.
+        """
+        try:
+            if hasattr(self._collection, "delete"):
+                self._collection.delete(ids=[id])
+                return True
+            return False
+        except Exception:
+            return False
+
+    def __len__(self):
+        """Koleksiyondaki kayit sayisi."""
+        try:
+            return self._collection.count()
+        except Exception:
+            return 0
+
+    def __repr__(self):
+        return (
+            f"<VektorelHafiza chromadb={CHROMA_AVAILABLE} "
+            f"kayit={len(self)}>"
+        )
+
+
 if __name__ == "__main__":
-    col = vektorel_hafiza_sistemini_kur()
-    basarili_tecrube_kaydet(col, "dosya olustur", "DOSYA_YAZ ile test.txt olusturuldu")
-    basarili_tecrube_kaydet(col, "web arama", "WEB_ARA ile Python dokumanina ulasildi")
-    basarisiz_tecrube_kaydet(col, "docker calistir", "Docker kurulu degil")
-    print(anlamsal_hafiza_ara(col, "dosya islemi"))
-    print(hafiza_ozeti_al(col))
+    # Test: VektorelHafiza sinifi ile
+    vh = VektorelHafiza()
+    vh.ekle("dosya olustur", {"tur": "test"})
+    vh.ekle("web arama", {"tur": "test"})
+    print(vh.ara("dosya islemi", limit=2))
+    print(f"Kayit sayisi: {len(vh)}")
+    print(vh)

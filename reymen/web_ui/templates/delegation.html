@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% block title %}🧠 Delegasyon Yönetimi{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>🧠 Delegasyon Yönetimi</h1>
+    <div class="header-actions">
+        <button class="btn btn-primary" onclick="delegasyonCalistir()">🚀 Görev Çalıştır</button>
+        <button class="btn btn-secondary" onclick="delegasyonYenile()">🔄 Yenile</button>
+        <button class="btn btn-danger" onclick="delegasyonTemizle()">🧹 Tamamlananları Temizle</button>
+    </div>
+</div>
+
+<!-- İstatistik Kartları -->
+<div id="delegasyon-ozet" hx-get="/api/delegation/status" hx-trigger="load" hx-target="this" hx-swap="innerHTML">
+    <div class="loader">⏳ Yükleniyor...</div>
+</div>
+
+<!-- Görev Çalıştırma Kartı -->
+<div class="card" style="margin-top:1rem;">
+    <h3>🚀 Yeni Görev Çalıştır</h3>
+    <form id="delegasyon-form" onsubmit="gonderGorev(event)">
+        <div class="form-group">
+            <label for="goal">🎯 Hedef (goal)</label>
+            <textarea id="goal" name="goal" rows="3" class="form-control" 
+                      placeholder="Örn: Sistemi analiz et, rapor oluştur ve e-posta gönder"
+                      required style="width:100%;padding:0.5rem;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;"></textarea>
+        </div>
+        <div class="form-group" style="margin-top:0.5rem;">
+            <label for="context">📎 Bağlam (context, isteğe bağlı)</label>
+            <textarea id="context" name="context" rows="2" class="form-control" 
+                      placeholder="Örn: kullanıcı_adı=admin, sistem=windows"
+                      style="width:100%;padding:0.5rem;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;"></textarea>
+        </div>
+        <div class="form-options" style="margin-top:0.5rem;display:flex;gap:1rem;align-items:center;">
+            <label class="checkbox-label">
+                <input type="checkbox" id="decompose" checked>
+                🔀 Alt-görevlere ayır (ayrıştır)
+            </label>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top:0.5rem;">🚀 Çalıştır</button>
+    </form>
+</div>
+
+<!-- İptal Formu -->
+<div class="card" style="margin-top:1rem;">
+    <h3>⛔ Alt-Ajan İptal Et</h3>
+    <div style="display:flex;gap:0.5rem;">
+        <input type="text" id="cancel-id" placeholder="Alt-ajan ID'si" 
+               style="flex:1;padding:0.5rem;border-radius:6px;border:1px solid #444;background:#1a1a2e;color:#e0e0e0;">
+        <button class="btn btn-danger" onclick="delegasyonIptal()">⛔ İptal</button>
+    </div>
+</div>
+
+<!-- Alt-Ajan Listesi -->
+<div class="card" style="margin-top:1rem;">
+    <h3>📋 Alt-Ajan Kayıtları</h3>
+    <div id="delegasyon-liste" hx-get="/api/delegation/status?detay=true" hx-trigger="load" hx-target="this" hx-swap="innerHTML">
+        <div class="loader">⏳ Yükleniyor...</div>
+    </div>
+</div>
+
+<!-- Detay Modal -->
+<div id="detay-modal" class="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:1000;">
+    <div class="modal-content" style="background:#1a1a2e;margin:10% auto;padding:2rem;border-radius:12px;max-width:800px;max-height:80vh;overflow-y:auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+            <h3>🔍 Alt-Ajan Detayı</h3>
+            <button onclick="kapatModal()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:#e0e0e0;">✕</button>
+        </div>
+        <div id="detay-icerik" style="margin-top:1rem;">
+            <div class="loader">⏳ Yükleniyor...</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Sayfa yüklenince otomatik yenile ────────────────────────────
+let yenilemeInterval = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Her 10 saniyede bir otomatik yenile
+    yenilemeInterval = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+            htmx.trigger('#delegasyon-ozet', 'load');
+            htmx.trigger('#delegasyon-liste', 'load');
+        }
+    }, 10000);
+});
+
+// ── Yenile ──────────────────────────────────────────────────────
+function delegasyonYenile() {
+    htmx.trigger('#delegasyon-ozet', 'load');
+    htmx.trigger('#delegasyon-liste', 'load');
+}
+
+// ── Görev Gönder ────────────────────────────────────────────────
+function gonderGorev(event) {
+    event.preventDefault();
+    
+    const goal = document.getElementById('goal').value.trim();
+    const context = document.getElementById('context').value.trim();
+    const decompose = document.getElementById('decompose').checked;
+    
+    if (!goal) {
+        toastGoster('❌ Hedef (goal) zorunlu', 'error');
+        return;
+    }
+    
+    const btn = event.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Çalışıyor...';
+    
+    const url = decompose ? '/api/delegation/run?decompose=true' : '/api/delegation/run';
+    const formData = new FormData();
+    formData.append('goal', goal);
+    formData.append('context', context);
+    
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+    })
+    .then(r => r.text())
+    .then(html => {
+        document.getElementById('delegasyon-ozet').innerHTML = html;
+        document.getElementById('goal').value = '';
+        document.getElementById('context').value = '';
+        setTimeout(() => delegasyonYenile(), 500);
+        toastGoster('✅ Görev başarıyla çalıştırıldı', 'success');
+    })
+    .catch(err => {
+        toastGoster('❌ Hata: ' + err.message, 'error');
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '🚀 Çalıştır';
+    });
+}
+
+// ── İptal ──────────────────────────────────────────────────────
+function delegasyonIptal() {
+    const id = document.getElementById('cancel-id').value.trim();
+    if (!id) {
+        toastGoster('❌ Alt-ajan ID\'si girin', 'error');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('id', id);
+    
+    fetch('/api/delegation/cancel', {
+        method: 'POST',
+        body: formData,
+    })
+    .then(r => r.text())
+    .then(html => {
+        document.getElementById('delegasyon-ozet').innerHTML = html;
+        document.getElementById('cancel-id').value = '';
+        setTimeout(() => delegasyonYenile(), 500);
+    })
+    .catch(err => {
+        toastGoster('❌ Hata: ' + err.message, 'error');
+    });
+}
+
+// ── Temizle ─────────────────────────────────────────────────────
+function delegasyonTemizle() {
+    fetch('/api/delegation/temizle', { method: 'POST' })
+    .then(r => r.text())
+    .then(html => {
+        document.getElementById('delegasyon-ozet').innerHTML = html;
+        setTimeout(() => delegasyonYenile(), 500);
+        toastGoster('🧹 Tamamlanan görevler temizlendi', 'success');
+    })
+    .catch(err => {
+        toastGoster('❌ Hata: ' + err.message, 'error');
+    });
+}
+
+// ── Detay Göster ────────────────────────────────────────────────
+function detayGoster(id) {
+    document.getElementById('detay-modal').style.display = 'block';
+    document.getElementById('detay-icerik').innerHTML = '<div class="loader">⏳ Yükleniyor...</div>';
+    
+    fetch('/api/delegation/detay?id=' + encodeURIComponent(id))
+    .then(r => r.json())
+    .then(data => {
+        const ikonlar = {
+            'success': '✅', 'error': '❌', 'cancelled': '⛔',
+            'running': '⏳', 'pending': '⏸️'
+        };
+        const ikon = ikonlar[data.status] || '❓';
+        const sure = data.sure ? data.sure + 's' : '—';
+        
+        document.getElementById('detay-icerik').innerHTML = `
+            <div class="card">
+                <div style="display:flex;justify-content:space-between;">
+                    <span><b>ID:</b> <code>${data.id}</code></span>
+                    <span>${ikon} <b>${data.status}</b></span>
+                </div>
+                <hr style="margin:0.5rem 0;border-color:#333;">
+                <div><b>🎯 Hedef:</b></div>
+                <pre style="background:#111;padding:0.5rem;border-radius:4px;margin-top:0.25rem;">${data.goal}</pre>
+                ${data.context ? `<div style="margin-top:0.5rem;"><b>📎 Bağlam:</b> ${data.context}</div>` : ''}
+                <div style="margin-top:0.5rem;"><b>⏱️ Süre:</b> ${sure}</div>
+                <div style="margin-top:0.5rem;"><b>📅 Oluşturulma:</b> ${data.created_at_iso || '—'}</div>
+                ${data.completed_at_iso ? `<div><b>🏁 Tamamlanma:</b> ${data.completed_at_iso}</div>` : ''}
+                ${data.result ? `
+                    <div style="margin-top:0.5rem;"><b>📄 Sonuç:</b></div>
+                    <pre style="background:#111;padding:0.5rem;border-radius:4px;margin-top:0.25rem;max-height:300px;overflow-y:auto;">${data.result}</pre>
+                ` : ''}
+            </div>
+        `;
+    })
+    .catch(err => {
+        document.getElementById('detay-icerik').innerHTML = `<div class="alert alert-error">❌ Hata: ${err.message}</div>`;
+    });
+}
+
+function kapatModal() {
+    document.getElementById('detay-modal').style.display = 'none';
+}
+
+// Modal dışına tıklayınca kapat
+document.addEventListener('click', function(e) {
+    if (e.target.id === 'detay-modal') kapatModal();
+});
+
+// ── Toast Bildirim ──────────────────────────────────────────────
+function toastGoster(mesaj, tip) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-' + (tip || 'info');
+    toast.textContent = mesaj;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+}
+</script>
+{% endblock %}

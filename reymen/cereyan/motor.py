@@ -95,6 +95,13 @@ try:
 except ImportError:
     _PLUGIN_MGR = None
 
+# Profil Yoneticisi (multi-profile sistemi)
+try:
+    from reymen.sistem.profile_manager import ProfileManager as _ProfileManager
+    _PROFILE_MGR = _ProfileManager(str(ROOT.parent.parent / "config.yaml"))
+except ImportError:
+    _PROFILE_MGR = None
+
 # Plugin Yukleyici (ReYMeN seviyesi — plugin.yaml destegi)
 try:
     from reymen.sistem.plugin_loader import PluginYukleyici as _PluginYukleyici
@@ -111,6 +118,70 @@ try:
     from reymen.cereyan.izole_laboratuvar import izole_python_calistir
 except ImportError:
     izole_python_calistir = None
+
+
+# ── Vektor bellek yardimci araci (VEKTOR_BELLEK icin) ────────────────────────
+def _vektor_bellek_arac(
+    vb, islem: str, metin: str = "", sorgu: str = "",
+    kayit_id: str = "", k: int = 5,
+) -> str:
+    """VEKTOR_BELLEK aracinin arkaplan fonksiyonu.
+
+    Args:
+        vb: VektorBellek instance
+        islem: ekle | ara | sil | listele | bilgi
+        metin: eklenecek metin
+        sorgu: arama sorgusu
+        kayit_id: silinecek kayit ID
+        k: kac sonuc
+
+    Returns:
+        Metin sonuc
+    """
+    from reymen.hafiza.vektor_bellek import VektorBellek
+
+    if not isinstance(vb, VektorBellek):
+        return "[Hata]: VektorBellek instance gerekli"
+
+    if islem == "ekle":
+        if not metin:
+            return "[Hata]: Metin bos olamaz"
+        kid = vb.ekle(metin)
+        return f"[OK] Kayit eklendi: {kid}" if kid else "[Hata]: Kayit eklenemedi"
+
+    elif islem == "ara":
+        if not sorgu:
+            return "[Hata]: Sorgu bos olamaz"
+        sonuclar = vb.ara(sorgu, k=k)
+        if not sonuclar:
+            return "[Bilgi]: Sonuc bulunamadi"
+        satirlar = [
+            f"[{i+1}] skor={skor:.4f} | {metin[:120]}"
+            for i, (_, metin, skor, _) in enumerate(sonuclar)
+        ]
+        return "\n".join(satirlar)
+
+    elif islem == "sil":
+        if not kayit_id:
+            return "[Hata]: Kayit ID gerekli"
+        return "[OK] Silindi" if vb.sil(kayit_id) else "[Hata]: Silme basarisiz"
+
+    elif islem == "listele":
+        kayitlar = vb.listele(limit=k or 20)
+        if not kayitlar:
+            return "[Bilgi]: Kayit yok"
+        satirlar = [f"  {r['id'][:12]}... | {r['metin'][:80]}" for r in kayitlar]
+        return f"Toplam {len(vb)} kayit:\n" + "\n".join(satirlar[:20])
+
+    elif islem == "bilgi":
+        import json
+        return json.dumps(vb.bilgi(), ensure_ascii=False, indent=2)
+
+    else:
+        return (
+            f"[Hata]: Bilinmeyen islem: '{islem}'. "
+            f"Secenekler: ekle, ara, sil, listele, bilgi"
+        )
 
 
 # ── Gateway State JSON yazma (bot.py bagimli degil) ──
@@ -328,9 +399,8 @@ class Motor:
             "cua_motor_araci",
             # MCP (Model Context Protocol)
             "tools.mcp_tool",
-            # Native MCP Client (Hermes-tarzi otomatik kesif + background baglanti)
-            "reymen.arac.native_mcp_client",
             # MCP Paket (async MCP manager + tool registry)
+            # NOTE: reymen.arac.native_mcp_client LEGACY, reymen.mcp kullaniliyor
             "reymen.mcp",
             # Merkezi Hata Toplama + Bildirim
             "reymen.sistem.hata_toplama",
@@ -366,6 +436,12 @@ class Motor:
             "reymen.core.mcp_server",
             # Schema Manager (SQLite versiyonlama + idempotent CREATE)
             "reymen.core.schema_manager",
+            # Session DB (P1) — FTS5 + trigram arama
+            "reymen.core.session_db",
+            # Cron/Scheduler (P1) — per-job override, watchdog
+            "reymen.core.cron_manager",
+            # Gateway Sistemi (P1) — multi-platform
+            "reymen.core.gateway_manager",
             # ACP (Agent Communication Protocol)
             "acp_server",
             # A2A (Agent-to-Agent messaging)
@@ -374,12 +450,23 @@ class Motor:
             "reymen.a2a_transport",
             # A2A Distributed (config + otomatik baglanti)
             "reymen.a2a_distributed",
+            # Gateway Sistemi (P1) — Çoklu platform gateway
+            "reymen.ag.gateway_temel",
+            "reymen.ag.salted_gateway",
+            "reymen.ag.platform_gateways",
+            "reymen.ag.gateway_yonetici",
+            # Delegasyon Sistemi (P2) — Subagent + görev ayrıştırma
+            "reymen.ag.delegasyon",
             # TUI (Terminal UI - prompt_toolkit tabanli)
             "reymen.tui",
             # Web UI (FastAPI + HTMX yonetim paneli)
             "reymen.web_ui",
             # Checkpoint yönetimi (görev geri alma / rollback)
             "tools.checkpoint_manager",
+            # Provider Sistemi (P0) — model routing, failover
+            "reymen.core.model_provider",
+            # YAML Config Manager (P0) — profile, env override
+            "reymen.core.config_manager",
         ]
         _yukleme_hatalari = []
         for mod_adi in moduller:
@@ -404,6 +491,104 @@ class Motor:
             self._skill_araclari_cache = True
         # Hafıza araçları
         self._hafiza_araclari_kaydet()
+        # Provider sistem araçları (Model Router + Failover)
+        try:
+            from reymen.ag.model_provider_router import router_al as _router_al
+            _router = _router_al()
+            self._plugin_arac_kaydet(
+                "PROVIDER_DURUM",
+                lambda provider="": str(_router.provider_durum(provider if provider else None)),
+                "Provider durum raporu: tüm provider'ların sağlık, hata, kara liste durumu. "
+                "Parametre: provider (str, opsiyonel) — belirli bir provider adı verilirse "
+                "sadece onun durumunu gösterir. Boş bırakılırsa tümünü listeler.",
+            )
+            self._plugin_arac_kaydet(
+                "MODEL_ROUTE",
+                lambda model="", provider_override="": str(
+                    _router.model_route(
+                        model,
+                        provider_override=provider_override if provider_override else None,
+                    )
+                ),
+                "Model→Provider yönlendirme kararı. Parametreler: model (str, zorunlu) — "
+                "model adı (ör: deepseek-v4-flash); provider_override (str, opsiyonel) — "
+                "provider'ı zorla belirtmek için. Döner: model, provider, api_tipi, base_url, "
+                "failover_zinciri.",
+            )
+            self._plugin_arac_kaydet(
+                "PROVIDER_SAGLIK",
+                lambda: str(_router.tum_provider_saglik()),
+                "Tüm provider'ların sağlık kontrolünü yapar. Her provider'a ping atar, "
+                "canlılık durumlarını döndürür.",
+            )
+            self._plugin_arac_kaydet(
+                "MODELLERI_LISTELE",
+                lambda provider="": str(
+                    _router.modelleri_listele(
+                        provider_filtre=provider if provider else None,
+                    )
+                ),
+                "Tüm bilinen modelleri listeler. Parametre: provider (str, opsiyonel) — "
+                "sadece belirli bir provider'daki modelleri filtrelemek için.",
+            )
+            logger.info("[Motor] Provider sistem araçları kaydedildi: PROVIDER_DURUM, MODEL_ROUTE, PROVIDER_SAGLIK, MODELLERI_LISTELE")
+        except Exception as _e:
+            logger.warning("[Motor] Provider araç kaydı başarısız: %s", _e)
+        # OAuth araçları (P2) — Google/GitHub/Discord giriş ve durum
+        try:
+            from reymen.guvenlik.oauth_servis import OAuthServis
+            _oauth_servis = OAuthServis()
+
+            def _oauth_login(provider: str = "google") -> str:
+                """OAUTH_LOGIN(provider) -> auth URL"""
+                try:
+                    url = _oauth_servis.login(provider)
+                    return (
+                        f"🔐 {provider.upper()} giriş URL'si:\n"
+                        f"{url}\n\n"
+                        f"📌 Bu URL'yi tarayıcıda açın, yetkilendirme yapın, "
+                        f"ardından callback'ten gelen 'code' parametresi ile "
+                        f"OAUTH_CALLBACK aracını kullanın."
+                    )
+                except Exception as e:
+                    return f"[OAuth:Hata] {e}"
+
+            def _oauth_durum(provider: str = "google") -> str:
+                """OAUTH_DURUM(provider) -> token durumu"""
+                try:
+                    durum = _oauth_servis.durum(provider)
+                    if not durum.get("var_mi"):
+                        return (
+                            f"❌ {provider.upper()}: Giriş yapılmamış.\n"
+                            f"Önce OAUTH_LOGIN({provider}) ile giriş yapın."
+                        )
+                    return (
+                        f"🔐 {provider.upper()} Token Durumu:\n"
+                        f"  Durum:     {'✅ Geçerli' if durum.get('gecerli_mi') else '❌ Süresi dolmuş'}\n"
+                        f"  Kullanıcı: {durum.get('display_name', '?')} ({durum.get('email', '?')})\n"
+                        f"  Bitiş:     {durum.get('expires_at', '?')}\n"
+                        f"  Scope:     {durum.get('scope', '?')}"
+                    )
+                except Exception as e:
+                    return f"[OAuth:Hata] {e}"
+
+            self._plugin_arac_kaydet(
+                "OAUTH_LOGIN",
+                _oauth_login,
+                "OAuth provider'a giriş yap — auth URL'si al. "
+                "Parametre: provider (str, varsayılan: google) — google/github/discord. "
+                "Döndürülen URL'yi tarayıcıda açın, callback'ten gelen code ile OAUTH_CALLBACK kullanın.",
+            )
+            self._plugin_arac_kaydet(
+                "OAUTH_DURUM",
+                _oauth_durum,
+                "OAuth provider token durumunu göster. "
+                "Parametre: provider (str, varsayılan: google) — google/github/discord. "
+                "Döner: token geçerliliği, kullanıcı bilgisi, bitiş zamanı.",
+            )
+            logger.info("[Motor] OAuth araçları kaydedildi: OAUTH_LOGIN, OAUTH_DURUM")
+        except Exception as _e:
+            logger.warning("[Motor] OAuth araç kaydı başarısız: %s", _e)
         # PluginYukleyici (ReYMeN seviyesi — plugin.yaml destegi)
         try:
             from reymen.sistem.plugin_loader import PluginYukleyici
@@ -418,13 +603,6 @@ class Motor:
         except Exception as _e:
             self._plugin_yukleyici = None
             print(f"[Motor] PluginYukleyici baslatma hatasi: {_e}")
-
-        # Native MCP Client otomatik kesif (Hermes-tarzi)
-        try:
-            from reymen.arac.native_mcp_client import discover_mcp_tools
-            discover_mcp_tools(self)
-        except ImportError:
-            pass
 
         # MCP Reconnect — heartbeat + otomatik yeniden bağlanma
         # reymen.mcp modülü yukarıda yüklendiğinden mcp_reconnect zaten import edilebilir
@@ -691,6 +869,21 @@ class Motor:
                     },
                     "required": ["komut"]
                 },
+                "PROFIL_DEGISTIR": {
+                    "type": "object",
+                    "properties": {
+                        "profil_adi": {
+                            "type": "string",
+                            "description": "Geçilecek profil adı: reyment, dev, test, prod"
+                        }
+                    },
+                    "required": ["profil_adi"]
+                },
+                "PROFIL_LISTELE": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                },
             }
 
             params = _OZEL_SCHEMALAR.get(ad, {
@@ -732,6 +925,7 @@ class Motor:
             "PYTHON_CALISTIR", "WEB_ARA", "TARAYICI_AC", "IC_GOZLEM",
             "HAFIZA_ARA", "PARALLEL_CALISTIR", "SKILL_ARA", "SKILL_AKTIVAT",
             "SKILL_KATEGORILER", "SKILL_SCRIPT", "ARAC_URET", "GUVENLI_CALISTIR",
+            "PROFIL_DEGISTIR", "PROFIL_LISTELE", "DURUM_OKU", "DURUM_RAPOR",
         }
         for satir in llm_cikti.splitlines():
             satir_s = satir.strip()
@@ -769,9 +963,53 @@ class Motor:
             logger.warning("[Motor] Modul yuklenemedi (L518): %s", ImportError)
             pass
 
+        # ── Vektor bellek araclari ───────────────────────────────────────────
+        try:
+            from reymen.hafiza.vektor_bellek import VektorBellek, vektor_bellek_al
+
+            # Singleton VektorBellek instance'i
+            _vb_global = vektor_bellek_al()
+
+            self._plugin_arac_kaydet(
+                "VECTOR_EKLE",
+                lambda metin="", kategori="": _vb_global.ekle(
+                    metin, {"kategori": kategori} if kategori else None
+                ) or "[Hata]: Metin bos olamaz",
+                "Vektor bellege anlamsal kayit ekle. Parametreler: metin (str, zorunlu) — "
+                "eklenecek metin; kategori (str, opsiyonel) — kayit kategorisi. "
+                "Doner: kayit ID'si veya hata mesaji.",
+            )
+            self._plugin_arac_kaydet(
+                "VECTOR_ARA",
+                lambda sorgu="", k=5: str(
+                    _vb_global.ara(sorgu, k=int(k) if str(k).isdigit() else 5)
+                ),
+                "Vektor belleginde anlamsal ara. Parametreler: sorgu (str, zorunlu) — "
+                "arama sorgusu; k (int, opsiyonel, default=5) — kac sonuc donsun. "
+                "Doner: [(id, metin, skor, metadata)] listesi.",
+            )
+            self._plugin_arac_kaydet(
+                "VEKTOR_BELLEK",
+                lambda islem="", metin="", sorgu="", kayit_id="", k=5: _vektor_bellek_arac(
+                    _vb_global, islem, metin, sorgu, kayit_id, int(k) if str(k).isdigit() else 5
+                ),
+                "Vektor bellek yonetim araci. Parametreler:\n"
+                "  - islem (str, zorunlu): 'ekle' | 'ara' | 'sil' | 'listele' | 'bilgi'\n"
+                "  - metin (str, opsiyonel): eklenecek metin (islem=ekle icin)\n"
+                "  - sorgu (str, opsiyonel): arama sorgusu (islem=ara icin)\n"
+                "  - kayit_id (str, opsiyonel): silinecek kayit ID'si (islem=sil icin)\n"
+                "  - k (int, opsiyonel, default=5): sonuc sayisi (islem=ara icin)\n"
+                "Doner: isleme gore metin sonuc.",
+            )
+            logger.info("[Motor] Vektor bellek araclari kaydedildi: VECTOR_EKLE, VECTOR_ARA, VEKTOR_BELLEK")
+        except ImportError as _e:
+            logger.warning("[Motor] Vektor bellek araclari yuklenemedi: %s", _e)
+            pass
+
     TOOLSET_GRUPLARI = {
         "temel":    {"KOMUT_CALISTIR", "PYTHON_CALISTIR", "DOSYA_YAZ", "DOSYA_OKU",
-                     "HAFIZA_ARA", "IC_GOZLEM", "PARALLEL_CALISTIR", "GOREV_BITTI"},
+                     "HAFIZA_ARA", "IC_GOZLEM", "PARALLEL_CALISTIR", "GOREV_BITTI",
+                     "PROFIL_DEGISTIR", "PROFIL_LISTELE"},
         "web":      {"WEB_ARA", "TARAYICI_AC"},
         "iletisim": {"TELEGRAM_GONDER", "TELEGRAM_RESIM_GONDER",
                      "TELEGRAM_STREAM_GONDER", "TELEGRAM_REACTION_EKLE",
@@ -790,6 +1028,7 @@ class Motor:
         "gorev":    {"TODO", "CLARIFY", "EXECUTE_CODE", "TUI_BASLAT", "KANBAN_GUNCELLE", "KANBAN_OZET"},
         "hata":     {"HATA_WATCH_BASLAT", "HATA_WATCH_DURDUR", "HATA_KOD_AL",
                      "TERMINAL_HATA_PARSE", "COZUM_UYGULA"},
+        "vektor":   {"VECTOR_EKLE", "VECTOR_ARA", "VEKTOR_BELLEK"},
         "tor":      {"TOR_AC", "TOR_KAPAT", "TOR_FORM_DOLDUR",
                      "TOR_LOGIN", "TOR_KAYIT", "TOR_SIPARIS"},
         "kopru":    {"KOPRU_BASLAT", "KOPRU_DURDUR", "KOPRU_DURUM"},
@@ -936,6 +1175,8 @@ class Motor:
         "KOPRU_BASLAT":       "Telegram Bridge baslatiliyor (Bot1/Bot2)...",
         "KOPRU_DURDUR":       "Telegram Bridge durduruluyor...",
         "KOPRU_DURUM":        "Telegram Bridge durumu sorgulaniyor...",
+        "PROFIL_DEGISTIR":    "Profil degistiriliyor...",
+        "PROFIL_LISTELE":     "Profiller listeleniyor...",
     }
 
     def _durum_goster(self, arac: str, params: List[str]) -> None:
@@ -1768,6 +2009,21 @@ class Motor:
                 return exec_run(kod=kod, timeout=timeout, calisma_dizini=calisma_dizini)
             except Exception as e:
                 return f"[EXECUTE_CODE HATASI] {e}"
+
+        # PROFIL_DEGISTIR — aktif profili değiştir
+        if arac == "PROFIL_DEGISTIR":
+            if not _PROFILE_MGR:
+                return "[Profil] HATA: Profil yoneticisi yuklu degil."
+            profil_adi = params[0] if params else ""
+            if not profil_adi:
+                return "[Profil] HATA: Profil adi gerekli. Kullanim: PROFIL_DEGISTIR(\"profil_adi\")"
+            return _PROFILE_MGR.profil_degistir(profil_adi)
+
+        # PROFIL_LISTELE — tüm profilleri listele
+        if arac == "PROFIL_LISTELE":
+            if not _PROFILE_MGR:
+                return "[Profil] HATA: Profil yoneticisi yuklu degil."
+            return _PROFILE_MGR.profil_listele()
 
         return f"[Hata]: Bilinmeyen araç '{arac}'."
 

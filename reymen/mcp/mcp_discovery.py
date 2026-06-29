@@ -19,6 +19,8 @@ from __future__ import annotations
 import logging
 import os
 import re
+import threading
+import time
 from pathlib import Path
 from typing import Any, Optional
 
@@ -336,6 +338,83 @@ def mcp_kesif_durumu() -> dict[str, Any]:
     }
 
 
+def mcp_kesif_izle_baslat(interval_sn: int = 120) -> bool:
+    """MCP konfig dosyalarini periyodik kontrol et (arkaplan thread).
+
+    Her N saniyede bir config.yaml ve .env dosyalarini kontrol eder,
+    yeni MCP sunuculari eklenmis mi diye bakar. Yeni sunucu bulursa
+    otomatik baglanir.
+
+    Args:
+        interval_sn: Kontrol araligi (saniye). Varsayilan: 120sn (2dk)
+
+    Returns:
+        True = baslatildi, False = zaten calisiyor
+    """
+    global _izleme_aktif, _izleme_thread
+    if _izleme_aktif:
+        return False
+
+    _izleme_aktif = True
+    _izleme_thread = threading.Thread(
+        target=_izleme_dongusu,
+        args=(interval_sn,),
+        daemon=True,
+        name="mcp-watcher",
+    )
+    _izleme_thread.start()
+    logger.info("[MCP] Konfig izleme baslatildi (aralik: %ds)", interval_sn)
+    return True
+
+
+def mcp_kesif_izle_durdur() -> None:
+    """Konfig izleme dongusunu durdur."""
+    global _izleme_aktif
+    _izleme_aktif = False
+    logger.info("[MCP] Konfig izleme durduruldu")
+
+
+# Module-level state variables
+_izleme_aktif = False
+_izleme_thread: Optional[threading.Thread] = None
+_son_mcp_imzasi: Optional[str] = None
+
+
+def _izle_baslat_wrapper(sn: int = 120) -> str:
+    """Wrapper for lambda in motor_kaydet."""
+    if mcp_kesif_izle_baslat(interval_sn=sn):
+        return f"[MCP] Konfig izleme baslatildi (aralik: {sn}s)"
+    return "[MCP] Konfig izleme zaten calisiyor"
+
+
+def _izleme_dongusu(interval_sn: int) -> None:
+    """Konfig dosyalarini periyodik kontrol eden dongu."""
+    global _son_mcp_imzasi
+    import hashlib
+
+    while _izleme_aktif:
+        try:
+            # Config dosyalarinin hash'ini hesapla
+            imzalar = []
+            for yol in CONFIG_YOLLARI + ENV_YOLLARI:
+                if yol.exists():
+                    imzalar.append(f"{yol}:{yol.stat().st_mtime}:{yol.stat().st_size}")
+            yeni_imza = hashlib.md5("|".join(imzalar).encode()).hexdigest()
+
+            if _son_mcp_imzasi is not None and _son_mcp_imzasi != yeni_imza:
+                # Degisiklik var - yeniden kesif yap
+                logger.info("[MCP] Konfig degismis, yeniden kesif yapiliyor...")
+                yeni = mcp_kesfet(geri_bildirim=True)
+                if yeni > 0:
+                    logger.info("[MCP] Runtime kesif: %d yeni sunucu bulundu", yeni)
+
+            _son_mcp_imzasi = yeni_imza
+        except Exception as e:
+            logger.debug("[MCP] Izleme hatasi (onemsiz): %s", e)
+
+        time.sleep(interval_sn)
+
+
 def mcp_kesif_raporu() -> str:
     """İnsan-okunabilir keşif durum raporu."""
     durum = mcp_kesif_durumu()
@@ -381,6 +460,22 @@ def motor_kaydet(motor) -> None:
         mcp_kesif_raporu,
         "Keşfedilen MCP sunucularının durum raporunu döndürür. "
         "Kullanım: MCP_DISCOVERY_DURUM() — durum raporu.",
+    )
+
+    motor._plugin_arac_kaydet(
+        "MCP_DISCOVERY_IZLE_BASLAT",
+        lambda sn=120: _izle_baslat_wrapper(sn),
+        "MCP konfig dosyalarini periyodik kontrol eder (arkaplan). "
+        "Yeni MCP sunucusu eklenirse otomatik baglanir. "
+        "Parametre: sn (kontrol araligi, varsayilan 120s). "
+        "Kullanım: MCP_DISCOVERY_IZLE_BASLAT(sn=120)",
+    )
+
+    motor._plugin_arac_kaydet(
+        "MCP_DISCOVERY_IZLE_DURDUR",
+        mcp_kesif_izle_durdur,
+        "MCP konfig izleme dongusunu durdurur. "
+        "Kullanım: MCP_DISCOVERY_IZLE_DURDUR()",
     )
 
 

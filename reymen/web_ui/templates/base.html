@@ -25,6 +25,7 @@
             <a href="/kanban" class="nav-link">📋 Kanban</a>
             <a href="/sandbox" class="nav-link">🏖️ Sandbox</a>
             <a href="/security" class="nav-link">🛡️ Security</a>
+            <a href="/delegasyon" class="nav-link">🧠 Delegasyon</a>
             <a href="/hatalar" class="nav-link">🔴 Hatalar</a>
             <a href="/logs" class="nav-link">📋 Canlı Log</a>
             <a href="/konusmalar" class="nav-link">💬 Konuşmalar</a>
@@ -46,6 +47,15 @@
             <button class="theme-toggle" onclick="temaDegistir()">🌓</button>
             <span class="nav-user">👤 {{ user }} <small class="role-badge">[{{ role or '?' }}]</small></span>
             <a href="/logout" class="nav-link nav-logout">🚪 Çıkış</a>
+            {% else %}
+            <span class="nav-oauth">
+                <a href="/auth/login/google" class="nav-link btn-oauth btn-google" title="Google ile Giriş">
+                    <span class="oauth-icon">G</span> Google
+                </a>
+                <a href="/auth/login/discord" class="nav-link btn-oauth btn-discord" title="Discord ile Giriş">
+                    <span class="oauth-icon">D</span> Discord
+                </a>
+            </span>
             {% endif %}
         </div>
     </nav>

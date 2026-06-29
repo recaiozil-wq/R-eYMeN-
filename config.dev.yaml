@@ -1,0 +1,16 @@
+# config.dev.yaml — Gelistirme profili override
+# Bu dosya dev profili aktifken otomatik yuklenir.
+# Buradaki degerler config.yaml'daki dev profil degerlerini ezer.
+
+# Gelistirme ortami icin yerel modeller
+default_provider: "lmstudio"
+default_model: "cognitivecomputations.dolphin3.0-llama3.1-8b"
+
+# Gelistirme sirasinda daha fazla deneme
+max_turns: 50
+
+# Yerel saglayici yapilandirmasi
+providers:
+  lmstudio:
+    base_url: "http://localhost:1234"
+    api_key: "not-needed"

@@ -1,0 +1,134 @@
+{
+  "proje": "ReYMeN Ajan",
+  "surum": "2026-06-29",
+  "son_guncelleme": "2026-06-29 09:15",
+  "guncelleyen_bot": "Kiral38 (Hermes Agent)",
+  "aciklama": "Tek bakman gereken dosya. Tüm durum burada.",
+
+  "onceki_eksikler": {
+    "aciklama": "Kısmen Var (7) — ilk backlog, hepsi tamamlandı",
+    "toplam": 7,
+    "tamam": 7,
+    "maddeler": {
+      "mcp_client": {
+        "durum": "tamam", "oncelik": "P1",
+        "detay": "Runtime auto-discovery (mcp_discovery.py) + reconnect heartbeat + pytest (6 test)",
+        "dosyalar": ["reymen/mcp/mcp_discovery.py", "reymen/mcp/mcp_reconnect.py", "reymen/test/test_mcp_reconnect.py"]
+      },
+      "plugin_sistemi": {
+        "durum": "tamam", "oncelik": "P2",
+        "detay": "Hot-reload CLI (importlib.reload) + ProviderPluginBase ABC + export/import .reyplugin",
+        "dosyalar": ["reymen/sistem/plugin_manager.py", "reymen/sistem/provider_plugin_base.py", "reymen_cli/plugin.py"]
+      },
+      "skills": {
+        "durum": "tamam", "oncelik": "P2",
+        "detay": "handle_skills_slash() + SkillActivator + path consolidation (skills/) + cron_skill_sync",
+        "dosyalar": ["reymen_cli/skills_hub.py", "reymen/sistem/skill_activator.py", "reymen/cereyan/cron_skill_sync.py"]
+      },
+      "web_search": {
+        "durum": "tamam", "oncelik": "P1",
+        "detay": "ABC tabanli 7 engine (DuckDuckGo/Google/Bing/Firecrawl/Brave/SearXNG/Exa) + SearchDispatcher + config-aware auto-detect",
+        "dosyalar": ["reymen/arac/web_search_engine.py"]
+      },
+      "image_generation": {
+        "durum": "tamam", "oncelik": "P2",
+        "detay": "4 engine (stub/FAL FLUX/OpenAI DALL-E 3/xAI Grok-2-image) + Web UI /media sayfasi",
+        "dosyalar": ["reymen/arac/image_gen_engine.py", "reymen/web_ui/templates/media.html"]
+      },
+      "browser_automation": {
+        "durum": "tamam", "oncelik": "P2",
+        "detay": "Playwright MCP katalogda + BrowserUseEngine async + config.yaml'da playwright entry",
+        "dosyalar": ["reymen/arac/browser_engine.py", "reymen/mcp/mcp_catalog.py", "config.yaml"]
+      },
+      "security": {
+        "durum": "tamam", "oncelik": "P1",
+        "detay": "Docker sandbox (DockerSandbox) + network restriction (NetworkRestriction) + Web UI /security sayfasi",
+        "dosyalar": ["reymen/guvenlik/docker_sandbox.py", "reymen/guvenlik/network_restriction.py", "reymen/web_ui/templates/security.html"]
+      }
+    }
+  },
+
+  "tamamen_eksik_10": {
+    "aciklama": "Tamamen Eksik (10) — Pasa_38 listesi, simdi hepsi tamam",
+    "toplam": 10,
+    "tamam": 10,
+    "maddeler": {
+      "provider_sistemi": {
+        "durum": "tamam", "oncelik": "P0",
+        "detay": "SaglayiciYonlendirici circuit breaker + health check + failover chain + 33 model mapping + saglayici_listele/kara_listede_mi/failover_chain metodlari",
+        "dosyalar": ["reymen/ag/provider_router.py", "reymen/ag/failover_chain.py", "reymen/ag/model_provider_router.py"]
+      },
+      "yaml_config_profile": {
+        "durum": "tamam", "oncelik": "P0",
+        "detay": "Multi-profile sistemi, override mekanizmasi, path fix (130/130 CLI modul yukleniyor)",
+        "dosyalar": ["reymen/sistem/profile_manager.py", "config.yaml", "reymen_cli/config.py", "reymen_cli/profiles.py"]
+      },
+      "session_db": {
+        "durum": "tamam", "oncelik": "P1",
+        "detay": "FTS5 + trigram arama, AdvancedSessionStorage SQLite WAL",
+        "dosyalar": ["reymen/hafiza/session_db.py", "reymen/sistem/session_search_tool.py"]
+      },
+      "cron_scheduler": {
+        "durum": "tamam", "oncelik": "P1",
+        "detay": "CronScheduler threading + watchdog + per-job override, cron_skill_sync motor'a bagli",
+        "dosyalar": ["reymen/sistem/cron_scheduler.py", "reymen_cli/cron.py", "reymen_cli/scheduler.py", "reymen_cli/watchdog.py"]
+      },
+      "gateway_sistemi": {
+        "durum": "tamam", "oncelik": "P1",
+        "detay": "Multi-platform (Telegram + CLI + Web + Discord stub), GatewayManager, path fix",
+        "dosyalar": ["reymen_cli/gateway.py", "reymen_cli/gateway_windows.py", "reymen/ag/gateway_temel.py", "reymen/ag/platform_gateways.py"]
+      },
+      "vektor_bellek": {
+        "durum": "tamam", "oncelik": "P2",
+        "detay": "VektorelHafiza class (ChromaDB + TF-IDF Counter cosine fallback), semantic search",
+        "dosyalar": ["reymen/hafiza/vektorel_hafiza.py", "reymen/hafiza/bellek_yonetici.py"]
+      },
+      "oauth_2_0": {
+        "durum": "tamam", "oncelik": "P2",
+        "detay": "Google + Discord OAuth2 full flow (ABC base + Manager + Token storage JSON + Web UI login/callback routes)",
+        "dosyalar": ["reymen/guvenlik/oauth2.py"]
+      },
+      "delegasyon": {
+        "durum": "tamam", "oncelik": "P2",
+        "detay": "SubAgent + TaskDecomposer (6 strateji) + DelegationManager + subprocess runner + Web UI /delegasyon sayfasi",
+        "dosyalar": ["reymen/ag/delegation.py", "reymen/ag/subagent_runner.py", "reymen/web_ui/templates/delegation.html"]
+      },
+      "backup_sistemi": {
+        "durum": "tamam", "oncelik": "P2",
+        "detay": "ZIP yedekleme (venv/.git/__pycache__ haric), CLI create/restore/list/schedule",
+        "dosyalar": ["reymen/sistem/backup.py", "reymen_cli/backup.py"]
+      },
+      "guardrails": {
+        "durum": "tamam", "oncelik": "P3",
+        "detay": "HallucinationFiltresi + HITLSikistirici + tool_guardrails + security_advisories + OSV.dev scanner",
+        "dosyalar": ["reymen/guvenlik/guardrails.py", "reymen/guvenlik/tool_guardrails.py", "reymen_cli/security_advisories.py", "reymen_cli/security_audit.py"]
+      }
+    }
+  },
+
+  "ek_duzeltmeler": {
+    "aciklama": "Bu seansta yapilan ek fix'ler",
+    "maddeler": [
+      "reymen_cli/__init__.py + ReYMeN_cli/__init__.py: sys.path bootstrap — tum 130 CLI modulu yukleniyor",
+      "reymen_cli/plugin.py: reload komutu eklendi + provider_plugin_base.py olusturuldu",
+      "reymen/cereyan/motor.py: MCP reconnect auto-start eklendi",
+      "reymen/arac/browser_engine.py: BrowserUseEngine llm guard eklendi",
+      "reymen/arac/web_search_engine.py: Firecrawl/Brave/SearXNG/Exa engine'leri eklendi, config-aware auto-detect",
+      "reymen/arac/image_gen_engine.py: xAI grok-2-image implementasyonu",
+      "reymen/web_ui/__init__.py: /media + /security + /delegasyon + /auth/login/{provider} route'lari",
+      "reymen/guvenlik/oauth2.py: Google + Discord OAuth2 full flow",
+      "reymen/ag/delegation.py: SubAgent + TaskDecomposer + DelegationManager",
+      "reymen/sistem/skill_activator.py: Auto-activation framework",
+      "reymen_cli/skills_hub.py: handle_skills_slash() + path consolidation",
+      "reymen_cli/firewall.py: stub → gercek implementasyon (NetworkRestriction ile)",
+      "reymen_cli/migrate.py: stub → gercek Alembic CLI wrapper",
+      "reymen/guvenlik/docker_sandbox.py: zaten varmis (572 satir)"
+    ]
+  },
+
+  "toplam_ozellik": 17,
+  "tamam": 17,
+  "isleniyor": 0,
+  "hata": 0,
+  "test_sonuc": "7/7 runtime test gecti (Provider + VectorMemory + Config + Gateway + Profiles + OAuth2 + Delegation)"
+}

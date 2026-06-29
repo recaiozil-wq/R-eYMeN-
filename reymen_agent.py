@@ -15,6 +15,20 @@ from typing import Any, Optional
 
 import requests
 
+# ── Yeni Provider + Config sistemi (P0) ──────────────────────
+try:
+    from reymen.core.model_provider import (
+        ProviderChain, varsayilan_zincir, CalistirSonuc
+    )
+    _PROVIDER_CHAIN_MEVCUT = True
+except ImportError:
+    _PROVIDER_CHAIN_MEVCUT = False
+try:
+    from reymen.core.config_manager import Config, varsayilan_config
+    _CONFIG_MEVCUT = True
+except ImportError:
+    _CONFIG_MEVCUT = False
+
 
 # ── Araçlar ──────────────────────────────────────────────────
 _WEB_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
@@ -89,22 +103,31 @@ MAX_YANIT_UZUNLUK = 4000
 MAX_BECERI_UZUNLUK = 1500
 MAX_MESAJ_UZUNLUK = 500
 # ── Kalıcı Ayar Sistemi ──────────────────────────────────────
-_AYAR_DOSYASI = Path(__file__).parent / ".ReYMeN" / "agent_ayarlari.json"
+def _ayar_dosyasi_yolu() -> Path:
+    """Ayar dosyasinin yolunu Config'den veya varsayilandan alir."""
+    if _CONFIG_MEVCUT:
+        cfg = varsayilan_config()
+        skills_dir = cfg.get_path("skills.dir")
+        if skills_dir:
+            return skills_dir.parent / "agent_ayarlari.json"
+    return Path(__file__).parent / ".ReYMeN" / "agent_ayarlari.json"
 
 def _ayar_oku() -> dict:
     """Kalıcı ayarları JSON'dan oku."""
+    _yol = _ayar_dosyasi_yolu()
     try:
-        if _AYAR_DOSYASI.exists():
-            return json.loads(_AYAR_DOSYASI.read_text(encoding="utf-8"))
+        if _yol.exists():
+            return json.loads(_yol.read_text(encoding="utf-8"))
     except Exception:
         logger.warning("[reymen_agent] Exception (detaysiz)")
     return {}
 
 def _ayar_yaz(ayarlar: dict) -> None:
     """Ayarları JSON'a yaz."""
+    _yol = _ayar_dosyasi_yolu()
     try:
-        _AYAR_DOSYASI.parent.mkdir(parents=True, exist_ok=True)
-        _AYAR_DOSYASI.write_text(
+        _yol.parent.mkdir(parents=True, exist_ok=True)
+        _yol.write_text(
             json.dumps(ayarlar, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
@@ -126,8 +149,7 @@ def _ayar_degistir(anahtar: str, deger: str) -> str:
     ayarlar = _ayar_oku()
     ayarlar[anahtar] = deger
     _ayar_yaz(ayarlar)
-    # Session'da da uygula
-    _FALLBACK_PROVIDERS[0]["name"] = deger if anahtar == "provider" else _FALLBACK_PROVIDERS[0]["name"]
+    # Provider degisikligi Config uzerinden de uygulanir
     return f"✅ {anahtar} → {deger}"
 
 # ── Bellek Sistemi ────────────────────────────────────────────
@@ -172,35 +194,27 @@ def _bellek_bilgisi_getir() -> str:
         f"- **{k}:** {v}" for k, v in _bellek.items()
     )
 
-# ── Multi-Provider Fallback Zinciri ─────────────────────────────
-# DeepSeek bitmişse (402/401) otomatik geçiş yapar
-_FALLBACK_PROVIDERS = [
-    {
-        "name": "xiaomi",
-        "api_url": "https://api.minimax.chat/v1/text/chatcompletion_v2",
-        "model": "MiniMax-Text-01",
-        "env_key": "XIAOMI_API_KEY",
-        "base_url": "https://api.minimax.chat/v1",
-    },
-    {
-        "name": "xai",
-        "api_url": "https://api.x.ai/v1/chat/completions",
-        "model": "grok-2-latest",
-        "env_key": "XAI_API_KEY",
-    },
-    {
-        "name": "deepseek",
-        "api_url": "https://api.deepseek.com/chat/completions",
-        "model": "deepseek-chat",
-        "env_key": "DEEPSEEK_API_KEY",
-    },
-    {
-        "name": "groq",
-        "api_url": "https://api.groq.com/openai/v1/chat/completions",
-        "model": "llama-3.3-70b-versatile",
-        "env_key": "GROQ_API_KEY",
-    },
-]
+# ── Multi-Provider Fallback Zinciri (ProviderChain ile) ──────
+# ProviderChain: deepseek -> openrouter -> xai -> groq -> lmstudio
+# Her provider 401/402/429/500 donerse siradakine gecer.
+
+def _api_cagir_fallback(
+    messages: list, system_content: str = ""
+) -> tuple[str, str]:
+    """
+    ProviderChain uzerinden multi-provider fallback ile LLM cagrisi.
+    Returns: (yanit, provider_name) veya ("", "")
+    """
+    if _PROVIDER_CHAIN_MEVCUT:
+        chain = varsayilan_zincir()
+        sonuc = chain.calistir(messages, system_content)
+        if sonuc.basarili:
+            return sonuc.yanit, sonuc.provider_adi
+        logger.warning("[reymen_agent] ProviderChain basarisiz: %s", sonuc.hata)
+        return "", ""
+
+    # Eski fallback (ProviderChain yoksa)
+    return _api_cagir_fallback_eski(messages, system_content)
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -275,15 +289,43 @@ def _beceri_baglami_al(hedef: str) -> str:
 
 
 # ═══════════════════════════════════════════════════════════════
-# _api_cagir_fallback — Multi-Provider Fallback
+# _api_cagir_fallback_eski — Legacy fallback (ProviderChain yoksa)
 # ═══════════════════════════════════════════════════════════════
 
+_FALLBACK_PROVIDERS = [
+    {
+        "name": "xiaomi",
+        "api_url": "https://api.minimax.chat/v1/text/chatcompletion_v2",
+        "model": "MiniMax-Text-01",
+        "env_key": "XIAOMI_API_KEY",
+        "base_url": "https://api.minimax.chat/v1",
+    },
+    {
+        "name": "xai",
+        "api_url": "https://api.x.ai/v1/chat/completions",
+        "model": "grok-2-latest",
+        "env_key": "XAI_API_KEY",
+    },
+    {
+        "name": "deepseek",
+        "api_url": "https://api.deepseek.com/chat/completions",
+        "model": "deepseek-chat",
+        "env_key": "DEEPSEEK_API_KEY",
+    },
+    {
+        "name": "groq",
+        "api_url": "https://api.groq.com/openai/v1/chat/completions",
+        "model": "llama-3.3-70b-versatile",
+        "env_key": "GROQ_API_KEY",
+    },
+]
 
-def _api_cagir_fallback(
+
+def _api_cagir_fallback_eski(
     messages: list, system_content: str = ""
 ) -> tuple[str, str]:
     """
-    Fallback zincirindeki provider'ları sırayla dener.
+    Eski fallback zinciri (ProviderChain mevcut degilse kullanilir).
     Returns: (yanit, provider_name) veya ("", "")
     """
     logger = _get_logger()
@@ -320,7 +362,7 @@ def _api_cagir_fallback(
                 "messages": full_messages,
                 "max_tokens": 1500,
                 "frequency_penalty": 0.8,
-                "stop": ["\n\n\n", "因为因为", "becausebecause"],
+                "stop": ["\n\n\n", "\u56e0\u4e3a\u56e0\u4e3a", "becausebecause"],
             }
 
         headers = {
@@ -461,7 +503,13 @@ def _deepseek_sohbet(messages: Any, config: Optional[dict] = None) -> str:
 
     # System mesajı oluştur (SOUL.md + AGENTS.md + Bellek ile)
     system_content = ""
-    soul_path = Path(__file__).parent / "SOUL.md"
+    _proje_koku = Path(__file__).parent
+    if _CONFIG_MEVCUT:
+        try:
+            _proje_koku = Path(varsayilan_config().get("general.project_root", str(_proje_koku)))
+        except Exception:
+            pass
+    soul_path = _proje_koku / "SOUL.md"
     if soul_path.exists():
         try:
             soul_text = soul_path.read_text(encoding="utf-8", errors="replace").strip()
@@ -469,7 +517,7 @@ def _deepseek_sohbet(messages: Any, config: Optional[dict] = None) -> str:
                 system_content += soul_text + "\n\n"
         except Exception:
             logger.warning("[reymen_agent] Exception (detaysiz)")
-    agents_path = Path(__file__).parent / "AGENTS.md"
+    agents_path = _proje_koku / "AGENTS.md"
     if agents_path.exists():
         try:
             agents_text = agents_path.read_text(encoding="utf-8", errors="replace").strip()

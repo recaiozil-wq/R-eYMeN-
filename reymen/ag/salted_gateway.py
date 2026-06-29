@@ -17,6 +17,10 @@ import asyncio
 from collections import deque
 from typing import Optional, List, Dict, Any, Callable
 import logging
+
+# GatewayBase (circular import yok)
+from reymen.ag.gateway_temel import GatewayBase
+
 logger = logging.getLogger(__name__)
 
 
@@ -538,6 +542,202 @@ class SaltedGateway:
             return json.dumps(sonuc, ensure_ascii=False, indent=2, default=str)
         except Exception as e:
             return json.dumps({"hata": str(e)}, ensure_ascii=False)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+#  TelegramGateway — GatewayBase Implementasyonu
+# ═══════════════════════════════════════════════════════════════════════
+
+class TelegramGateway(GatewayBase):
+    """
+    Telegram platform gateway'i — GatewayBase implementasyonu.
+
+    Mevcut SaltedGateway, TelegramRateLimiter ve AutoReconnector
+    yapilarini kullanarak Telegram API'sine baglanir, mesaj
+    gonderir/alir. python-telegram-bot kutuphanesini kullanir.
+    """
+
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
+        super().__init__("telegram", config)
+        self._token: Optional[str] = None
+        self._bot = None
+        self._rate_limiter: Optional[TelegramRateLimiter] = None
+        self._reconnector: Optional[AutoReconnector] = None
+        self._imzalayici: Optional[SaltedGateway] = None
+        self._mesaj_kuyrugu: asyncio.Queue = asyncio.Queue()
+        self._gelen_mesajlar: List[Dict[str, Any]] = []
+
+    async def connect(self) -> bool:
+        """Telegram bot API'sine baglan."""
+        try:
+            token = self._config.get("token") or os.getenv("TELEGRAM_BOT_TOKEN", "")
+            if not token:
+                self._son_hata = "TELEGRAM_BOT_TOKEN bulunamadi"
+                logger.error(f"[TelegramGateway] {self._son_hata}")
+                return False
+
+            self._token = token
+
+            # Rate limiter
+            self._rate_limiter = TelegramRateLimiter(
+                max_per_second=self._config.get("rate_limit", 30),
+                burst=self._config.get("burst", 40),
+            )
+
+            # SaltedGateway imzalayici
+            self._imzalayici = SaltedGateway(
+                salt=self._config.get("salt")
+            )
+
+            # python-telegram-bot
+            try:
+                from telegram.ext import Application
+                self._bot = Application.builder().token(token).build()
+                await self._bot.initialize()
+                logger.info("[TelegramGateway] Application baslatildi.")
+            except ImportError:
+                logger.warning("[TelegramGateway] python-telegram-bot yuklu degil, stub modda.")
+                self._bot = None
+
+            # AutoReconnector
+            self._reconnector = AutoReconnector(
+                connect_fn=self._baglanti_kur,
+                max_retries=self._config.get("max_retries", 10),
+                base_delay=self._config.get("base_delay", 1),
+            )
+
+            self._bagli = True
+            self._son_hata = None
+            logger.info("[TelegramGateway] Telegram'a baglanildi.")
+            return True
+
+        except Exception as e:
+            self._son_hata = str(e)
+            logger.error(f"[TelegramGateway] Baglanti hatasi: {e}")
+            return False
+
+    async def _baglanti_kur(self) -> None:
+        """AutoReconnector icin baglanti fonksiyonu."""
+        # Connect zaten yapildi, health check icin
+        if not self._bagli:
+            await self.connect()
+
+    async def disconnect(self) -> bool:
+        """Telegram baglantisini kes."""
+        try:
+            if self._bot:
+                await self._bot.shutdown()
+                self._bot = None
+            if self._reconnector:
+                self._reconnector.stop()
+            self._bagli = False
+            logger.info("[TelegramGateway] Baglanti kesildi.")
+            return True
+        except Exception as e:
+            self._son_hata = str(e)
+            logger.error(f"[TelegramGateway] Baglanti kesme hatasi: {e}")
+            return False
+
+    async def send(self, mesaj: str, hedef: Optional[str] = None,
+                   meta: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Telegram'a mesaj gonder."""
+        try:
+            if not self._bagli:
+                return {"basarili": False, "hata": "Baglanti yok"}
+
+            chat_id = hedef or self._config.get("varsayilan_chat_id")
+
+            # Rate limit
+            if self._rate_limiter:
+                await self._rate_limiter.acquire()
+
+            # SaltedGateway imzasi
+            imza = None
+            if self._imzalayici:
+                imzali = self._imzalayici.gonder(hedef="telegram", mesaj=mesaj)
+                imza = imzali.get("token")
+
+            # python-telegram-bot ile gonder
+            if self._bot and chat_id:
+                try:
+                    await self._bot.bot.send_message(
+                        chat_id=chat_id,
+                        text=mesaj,
+                        parse_mode="Markdown",
+                    )
+                except Exception as send_err:
+                    logger.warning(f"[TelegramGateway] Gonderim: {send_err}")
+
+            self._mesaj_sayaci += 1
+            return {
+                "basarili": True,
+                "platform": "telegram",
+                "hedef": chat_id,
+                "mesaj": mesaj,
+                "imza": imza,
+                "zaman": time.time(),
+            }
+
+        except Exception as e:
+            self._son_hata = str(e)
+            return {"basarili": False, "hata": str(e)}
+
+    async def receive(self, timeout: float = 5.0) -> Optional[Dict[str, Any]]:
+        """Gelen Telegram mesajini kuyruktan al."""
+        try:
+            mesaj = await asyncio.wait_for(self._mesaj_kuyrugu.get(), timeout=timeout)
+            return mesaj
+        except asyncio.TimeoutError:
+            return None
+
+    async def health_check(self) -> Dict[str, Any]:
+        """Telegram baglanti sagligi kontrolu."""
+        try:
+            if not self._bagli:
+                return {"durum": "kopuk", "platform": "telegram"}
+
+            if self._bot:
+                me = await self._bot.bot.get_me()
+                return {
+                    "durum": "saglikli",
+                    "platform": "telegram",
+                    "bot_username": me.username if me else None,
+                }
+
+            return {"durum": "saglikli", "platform": "telegram", "not": "stub_mod"}
+        except Exception as e:
+            return {"durum": "hata", "platform": "telegram", "hata": str(e)}
+
+    def mesaj_ekle(self, mesaj: Dict[str, Any]) -> None:
+        """Gelen mesaji kuyruga ekle (callback'ler icin)."""
+        self._mesaj_kuyrugu.put_nowait(mesaj)
+        self._gelen_mesajlar.append(mesaj)
+
+
+# ── Motor Kayit ─────────────────────────────────────────────────────
+
+def motor_kaydet(motor) -> None:
+    """Motor'a salted gateway araçlarını kaydeder."""
+    motor._plugin_arac_kaydet(
+        "SALTED_GATEWAY_OLUSTUR",
+        lambda salt="", rate_limit="100": f"SaltedGateway(salt='{salt}', rate_limit={rate_limit})",
+        "Guvenli SaltedGateway ornegi olusturur",
+    )
+    motor._plugin_arac_kaydet(
+        "SALTED_GATEWAY_GONDER",
+        lambda hedef="", mesaj="": f"SaltedGateway().gonder(hedef='{hedef}', mesaj='{mesaj}')",
+        "SaltedGateway ile imzali mesaj gonderir",
+    )
+    motor._plugin_arac_kaydet(
+        "SALTED_GATEWAY_DOGRULA",
+        lambda token="", hedef="", mesaj="": f"SaltedGateway().dogrula(token='{token}', ...)",
+        "SaltedGateway token dogrulamasi yapar",
+    )
+    motor._plugin_arac_kaydet(
+        "SALTED_GATEWAY_ISTATISTIK",
+        lambda: "SaltedGateway().istatistik()",
+        "SaltedGateway kullanim istatistiklerini dondurur",
+    )
 
 
 if __name__ == "__main__":
