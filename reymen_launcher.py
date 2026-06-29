@@ -247,7 +247,7 @@ def _hermes_welcome(model: str, session_id: str = ""):
             tools=[],
             enabled_toolsets=[],
             session_id=session_id,
-            context_length=65536,
+            context_length=1048576,  # 1M token
         )
     except Exception:
         # Fallback: basit acilis
@@ -407,9 +407,10 @@ def _repl(session_id=""):
         print(f"\n  {'─'*50}")
         print(f"  {cevap}")
         print(f"  {'─'*50}")
+        # Hermes tarzi status line
         t_in = len(girdi.split())
         t_out = len(cevap.split())
-        print(f"  {_d(f'{dt:.1f}s · token yaklaşık: giriş={t_in*2} çıkış={t_out*2}')}")
+        print(f"  {_y('deepseek-v4-flash')} {_d('|')} {_c(f'{t_in*2}K/1M')} {_d('|')} [{_g('█'*int(min(20, t_in*2//5000)))}{_d('▒'*max(0,20-int(min(20, t_in*2//5000))))}] {_g(f'{min(99, t_in*2//10000)}%')} {_d('|')} {_y(f'{dt:.0f}s')}", flush=True)
 
 # ── Giriş noktası ────────────────────────────────────────────────────────────
 def main():
