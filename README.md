@@ -351,10 +351,12 @@ Pull request'ler açıktır! [CONTRIBUTING.md](CONTRIBUTING.md) dosyasına bak.
 
 ---
 
-## 💬 Topluluk
+## 💬 İletişim
 
 | Kanal | Link |
 |:------|:-----|
-| GitHub Issues | [Hata bildir / Öneri yap](https://github.com/recaiozil-wq/R-eYMeN-/issues/new/choose) |
-| Telegram | @Pasa_38 |
-| Discord | (yakında) |
+| 📮 GitHub Issues | [Hata bildir / Öneri yap](https://github.com/recaiozil-wq/R-eYMeN-/issues/new/choose) |
+| 💬 Telegram | [@Pasa_38](https://t.me/Pasa_38) — doğrudan mesaj |
+| 🐞 Hata/Öneri | GitHub Issues tercih edilir, Telegram acil durumlar için |
+
+> Proje tek geliştirici tarafından yürütülüyor. Yanıt süresi birkaç saat ile bir gün arasında değişebilir. Sabrınız için teşekkürler 🙏
