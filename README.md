@@ -353,10 +353,6 @@ Pull request'ler açıktır! [CONTRIBUTING.md](CONTRIBUTING.md) dosyasına bak.
 
 ## 💬 İletişim
 
-| Kanal | Link |
-|:------|:-----|
-| 📮 GitHub Issues | [Hata bildir / Öneri yap](https://github.com/recaiozil-wq/R-eYMeN-/issues/new/choose) |
-| 💬 Telegram | [@ReymenSohbetbot](https://t.me/ReymenSohbetbot) — bot üzerinden mesaj |
-| 🐞 Hata/Öneri | GitHub Issues tercih edilir, Telegram acil durumlar için |
+Telegram: [@ReymenSohbetbot](https://t.me/ReymenSohbetbot) — bot üzerinden mesaj gönderin.
 
 > Proje tek geliştirici tarafından yürütülüyor. Yanıt süresi birkaç saat ile bir gün arasında değişebilir. Sabrınız için teşekkürler 🙏
