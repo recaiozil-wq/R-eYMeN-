@@ -109,8 +109,8 @@ async def auth_middleware(request: Request, call_next):
         return await call_next(request)
 
     # ReYMeN pattern: once access token, yoksa refresh token dene
-    at = request.cookies.get("hermes_session_at")
-    rt = request.cookies.get("hermes_session_rt")
+    at = request.cookies.get("reymen_session_at")
+    rt = request.cookies.get("reymen_session_rt")
 
     session = None
     if at:
@@ -132,13 +132,13 @@ async def auth_middleware(request: Request, call_next):
             if session is not None:
                 response = await call_next(request)
                 response.set_cookie(
-                    "hermes_session_at", session.access_token,
+                    "reymen_session_at", session.access_token,
                     max_age=token_manager.expires_in(session.access_token),
                     httponly=True, samesite="lax",
                 )
                 if session.refresh_token:
                     response.set_cookie(
-                        "hermes_session_rt", session.refresh_token,
+                        "reymen_session_rt", session.refresh_token,
                         max_age=604800, httponly=True, samesite="lax",
                     )
                 return response
@@ -235,13 +235,13 @@ async def login_post(request: Request):
 
     response = RedirectResponse(url="/", status_code=302)
     response.set_cookie(
-        "hermes_session_at", session.access_token,
+        "reymen_session_at", session.access_token,
         max_age=token_manager.expires_in(session.access_token),
         httponly=True, samesite="lax",
     )
     if session.refresh_token:
         response.set_cookie(
-            "hermes_session_rt", session.refresh_token,
+            "reymen_session_rt", session.refresh_token,
             max_age=604800, httponly=True, samesite="lax",
         )
     return response
@@ -254,8 +254,8 @@ async def logout(request: Request):
     audit_log(AuditEvent.LOGOUT, user_id=user,
               ip=request.client.host if request.client else "")
     response = RedirectResponse(url="/login")
-    response.delete_cookie("hermes_session_at", path="/")
-    response.delete_cookie("hermes_session_rt", path="/")
+    response.delete_cookie("reymen_session_at", path="/")
+    response.delete_cookie("reymen_session_rt", path="/")
     return response
 
 
@@ -343,13 +343,13 @@ async def oauth_callback(provider: str, request: Request,
 
         response = RedirectResponse(url="/", status_code=302)
         response.set_cookie(
-            "hermes_session_at", session.access_token,
+            "reymen_session_at", session.access_token,
             max_age=token_manager.expires_in(session.access_token),
             httponly=True, samesite="lax",
         )
         if session.refresh_token:
             response.set_cookie(
-                "hermes_session_rt", session.refresh_token,
+                "reymen_session_rt", session.refresh_token,
                 max_age=604800, httponly=True, samesite="lax",
             )
         return response
@@ -820,11 +820,11 @@ async def sistem_sayfasi(request: Request):
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
-# API — Görsel Üretim JSON (/api/hermes/media)
+# API — Görsel Üretim JSON (/api/reymen/media)
 # ---------------------------------------------------------------------------
 
 
-@app.get("/api/hermes/media/backends")
+@app.get("/api/reymen/media/backends")
 async def api_media_backends():
     """JSON: Kayıtlı görsel üretim backend'leri."""
     try:
@@ -845,7 +845,7 @@ async def api_media_backends():
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
-@app.post("/api/hermes/media/generate")
+@app.post("/api/reymen/media/generate")
 async def api_media_generate(request: Request):
     """JSON: Görsel üret."""
     try:
@@ -1653,9 +1653,9 @@ def _env_oku(anahtar: str, varsayilan: str = "") -> str:
         if k.strip() == anahtar:
             return v.strip().strip('"').strip("'")
     # ReYMeN env'de de ara
-    hermes_env = Path.home() / "AppData" / "Local" / "reymen" / "profiles" / "kiral38" / ".env"
-    if hermes_env.exists():
-        for satir in hermes_env.read_text(encoding="utf-8").splitlines():
+    kiral_env = Path.home() / "AppData" / "Local" / "reymen" / "profiles" / "kiral38" / ".env"
+    if kiral_env.exists():
+        for satir in kiral_env.read_text(encoding="utf-8").splitlines():
             satir = satir.strip()
             if satir.startswith("#") or "=" not in satir:
                 continue

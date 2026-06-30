@@ -4,7 +4,7 @@ ReYMeN dashboard_auth pattern'inin birebir kopyası:
   - AuthProvider ABC (ReYMeN'teki DashboardAuthProvider)
   - Session dataclass (user_id, display_name, role, provider, expires_at)
   - Provider registry (register_provider, get_provider, list_providers)
-  - JWT cookie (hermes_session_at / hermes_session_rt)
+  - JWT cookie (reymen_session_at / reymen_session_rt)
   - Role bazlı izin sistemi
   - Audit logging
 
@@ -176,8 +176,8 @@ class AuthConfig:
     ))
     token_expiry: int = 86400          # 24 saat (access token)
     refresh_expiry: int = 604800        # 7 gun (refresh token)
-    cookie_name: str = "hermes_session_at"   # ReYMeN ile uyumlu
-    cookie_rt_name: str = "hermes_session_rt"  # refresh token cookie
+    cookie_name: str = "reymen_session_at"   # ReYMeN ile uyumlu
+    cookie_rt_name: str = "reymen_session_rt"  # refresh token cookie
     users_file: Path = field(default_factory=lambda: PROJE_KOK / ".ReYMeN" / "web" / "users.json")
     password_provider: str = field(default_factory=lambda: os.getenv("AUTH_PROVIDER", "password"))
 

@@ -37,9 +37,9 @@ def _env_oku(anahtar: str, varsayilan: str = "") -> str:
             if k.strip() == anahtar:
                 return v.strip().strip('"').strip("'")
     # ReYMeN env fallback
-    hermes_env = Path.home() / "AppData" / "Local" / "reymen" / "profiles" / "kiral38" / ".env"
-    if hermes_env.exists():
-        for satir in hermes_env.read_text(encoding="utf-8").splitlines():
+    kiral_env = Path.home() / "AppData" / "Local" / "reymen" / "profiles" / "kiral38" / ".env"
+    if kiral_env.exists():
+        for satir in kiral_env.read_text(encoding="utf-8").splitlines():
             satir = satir.strip()
             if satir.startswith("#") or "=" not in satir:
                 continue
