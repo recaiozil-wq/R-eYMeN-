@@ -33,7 +33,7 @@ echo [OK] Windows 10+
 set /a ADIM+=1
 echo ^(2/5^) Python kontrolu...
 python --version >nul 2>&1
-if !errorlevel! neq 0 (
+if %errorlevel% neq 0 (
     echo [!!] Python bulunamadi! Yukleniyor...
     winget install Python.Python.3.11 --silent --accept-package-agreements
     if !errorlevel! neq 0 (
@@ -45,7 +45,7 @@ if !errorlevel! neq 0 (
     )
 )
 python -c "import sys; exit(0) if sys.version_info >= (3,11) else exit(1)" >nul 2>&1
-if !errorlevel! neq 0 (
+if %errorlevel% neq 0 (
     echo [!] Python 3.11+ gerekli!
     python --version
     pause
@@ -58,7 +58,7 @@ echo [OK] %PYVER%
 set /a ADIM+=1
 echo ^(3/5^) Git kontrolu...
 git --version >nul 2>&1
-if !errorlevel! neq 0 (
+if %errorlevel% neq 0 (
     echo [!!] Git bulunamadi! Yukleniyor...
     winget install Git.Git --silent --accept-package-agreements
     if !errorlevel! neq 0 (
@@ -74,10 +74,10 @@ echo [OK] %GITVER%
 set /a ADIM+=1
 echo ^(4/7^) Node.js kontrolu...
 node --version >nul 2>&1
-if !errorlevel! neq 0 (
+if %errorlevel% neq 0 (
     echo [!!] Node.js bulunamadi! Yukleniyor...
     winget install OpenJS.NodeJS.LTS --silent --accept-package-agreements
-    if !errorlevel! neq 0 (
+    if !errorlevel% neq 0 (
         echo [!] Basarisiz! https://nodejs.org adresinden el ile indir
         pause
         exit /b
@@ -90,7 +90,7 @@ echo [OK] Node.js %NODEVER%
 set /a ADIM+=1
 echo ^(5/7^) FFmpeg kontrolu...
 ffmpeg -version >nul 2>&1
-if !errorlevel! neq 0 (
+if %errorlevel% neq 0 (
     echo [!!] FFmpeg bulunamadi! Yukleniyor...
     winget install "FFmpeg (Shared)" --silent --accept-package-agreements 2>nul
     winget install Gyan.FFmpeg --silent --accept-package-agreements 2>nul
@@ -136,47 +136,52 @@ if defined FREE (
     )
 )
 
-:: Sanal ortam kontrolu - if not exist bloklari ile (parantez hatasi yok)
-set VENV_DIR=reymen_venv
+:: ---------- 2. SANAL ORTAM VE PAKET KURULUMU ----------
+set "VENV_DIR=reymen_venv"
 
-:: Varsayilan reymen_venv kontrolu
-if not exist "%VENV_DIR%\Scripts\activate" (
-    :: reymen_venv yoksa, venv (standart ad) var mi kontrol et
-    if not exist "venv\Scripts\activate" (
-        :: Hicbiri yoksa reymen_venv olustur
-        echo [..] Sanal ortam bulunamadi, olusturuluyor: %VENV_DIR%
-        python -m venv "%VENV_DIR%"
-        if !errorlevel! neq 0 (
-            echo [!!] Sanal ortam olusturulamadi!
-            echo     Cozum: Gecici olarak Defender Gercek Zamanli Korumayi kapat:
-            echo     PowerShell (Yonetici): Set-MpPreference -DisableRealtimeMonitoring $true
-            pause
-            exit /b
-        )
-    ) else (
-        set "VENV_DIR=venv"
-    )
+:: 1) reymen_venv zaten varsa direkt oraya atla
+if exist "reymen_venv\Scripts\activate" (
+    set "VENV_DIR=reymen_venv"
+    goto venv_hazir
 )
-:venv_hazir
-echo [OK] Sanal ortam: %VENV_DIR%
 
+:: 2) Standart venv varsa oraya atla
+if exist "venv\Scripts\activate" (
+    set "VENV_DIR=venv"
+    goto venv_hazir
+)
+
+:: 3) Hiçbiri yoksa sıfırdan reymen_venv oluştur
+echo [..] Sanal ortam bulunamadi, yeni ortam olusturuluyor: %VENV_DIR%
+python -m venv "%VENV_DIR%"
+if %errorlevel% neq 0 (
+    echo [!!] Sanal ortam olusturulamadi!
+    echo     Cozum: Gecici olarak Windows Defender Gercek Zamanli Korumayi kapatin.
+    pause
+    exit /b
+)
+
+:venv_hazir
+echo [OK] Aktif Sanal Ortam: %VENV_DIR%
 call "%VENV_DIR%\Scripts\activate"
 
-:: pip'i guncelle
+:: pip guncellemesi
 python -m pip install --upgrade pip --quiet
 
-:: pip paketleri
-:: pip ile yukle (pyproject.toml uzerinden)
+:: Bağımlılıkların pyproject.toml üzerinden kurulması
 if exist pyproject.toml (
+    echo [..] Bagimliliklar pyproject.toml uzerinden yukleniyor...
     pip install -e . --quiet
 ) else (
+    echo [..] pyproject.toml bulunamadi, temel paketler yukleniyor...
     pip install requests python-dotenv --quiet
 )
-if !errorlevel! equ 0 (
-    echo [OK] Paketler yuklendi
+
+if %errorlevel% equ 0 (
+    echo [OK] Tüm paketler basariyla yuklendi.
 ) else (
-    echo [!] Paket hatasi!
-    echo     Cozum: Elle dene: pip install -e .
+    echo [!] Paket yukleme hatasi!
+    echo     Cozum: Manuel olarak terminalde 'pip install -e .' komutunu calistirin.
     pause
     exit /b
 )
