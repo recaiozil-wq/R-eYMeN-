@@ -37,7 +37,7 @@ if !errorlevel! neq 0 (
     echo [!!] Python bulunamadi! Yukleniyor...
     winget install Python.Python.3.11 --silent --accept-package-agreements
     if !errorlevel! neq 0 (
-        echo [!] Otomatik basarisiz! Suradan el ile indir:
+        echo [^^!] Otomatik basarisiz^^! Suradan el ile indir:
         echo     https://www.python.org/downloads/release/python-3119/
         echo     Kurarken "Add Python to PATH" isaretle
         pause
@@ -62,7 +62,7 @@ if !errorlevel! neq 0 (
     echo [!!] Git bulunamadi! Yukleniyor...
     winget install Git.Git --silent --accept-package-agreements
     if !errorlevel! neq 0 (
-        echo [!] Basarisiz! https://git-scm.com/download/win
+        echo [^^!] Basarisiz^^! https://git-scm.com/download/win
         pause
         exit /b
     )
@@ -78,7 +78,7 @@ if !errorlevel! neq 0 (
     echo [!!] Node.js bulunamadi! Yukleniyor...
     winget install OpenJS.NodeJS.LTS --silent --accept-package-agreements
     if !errorlevel! neq 0 (
-        echo [!] Basarisiz! https://nodejs.org adresinden el ile indir
+        echo [^^!] Basarisiz^^! https://nodejs.org adresinden el ile indir
         pause
         exit /b
     )
