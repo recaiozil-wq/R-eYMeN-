@@ -243,6 +243,11 @@ _*.cmd
 *.hermes-tmp.*
 *.tmp
 
+# Runtime state (regenerated)
+.ReYMeN/watchdog_hash.json
+**/account_summary.json
+.ReYMeN/write_key.py
+
 # Build çıktıları
 *.exe
 *.spec
@@ -273,3 +278,7 @@ ReYMeN-memory-backup/
 ReYMeN_cli/
 _hermes_kopyalari/
 apps/
+
+# Runtime state files
+.ReYMeN/watchdog_hash.json
+**/account_summary.json

@@ -1,84 +1,73 @@
-# Katki Rehberi / Contributing Guide
+# Katkı Rehberi / Contributing Guide
 
-ReYMeN'e katkida bulunmak istediginiz icin tesekkurler!
+ReYMeN'e katkıda bulunduğun için teşekkürler! 🎉
 
-## Baslarken / Getting Started
+## 🚀 Hızlı Başlangıç
 
-1. **Fork** et -> [github.com/Watcher-Hermes/ReYMeN-Ajan](https://github.com/Watcher-Hermes/ReYMeN-Ajan)
-2. **Clone**:
-   ```bash
-   git clone https://github.com/<kullanici>/ReYMeN-Ajan.git
-   cd ReYMeN-Ajan
-   ```
-3. **Ortami kur**:
-   ```bash
-   python -m venv venv
-   venv\Scripts\activate  # Windows
-   pip install -e ".[dev]"
-   pre-commit install
-   ```
-4. **Branch ac**:
-   ```bash
-   git checkout -b feature/ozellik-adi
-   # veya
-   git checkout -b fix/hata-adi
-   ```
-
-## Branch Stratejisi
-- `main` — kararli surum
-- `feature/xyz` — yeni ozellik
-- `fix/xyz` — hata duzeltme
-- `docs/xyz` — dokumantasyon
-
-## Test
 ```bash
-# Tum testler
-pytest tests/ --ignore=tests/ReYMeN_reference -v
+# 1. Fork'la ve clone'la
+git clone https://github.com/KULLANICI_ADIN/ReYMeN-Ajan.git
+cd ReYMeN-Ajan
 
-# Tek dosya
-pytest tests/test_kanban.py -v
+# 2. Sanal ortam oluştur
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# venv\Scripts\activate   # Windows
 
-# Coverage
-coverage run --source=reymen -m pytest tests/ --ignore=tests/ReYMeN_reference -q
-coverage report
+# 3. Geliştirme bağımlılıklarını yükle
+pip install -e ".[dev,full]"
+
+# 4. Pre-commit hook'larını kur
+pre-commit install
+
+# 5. Test et
+pytest tests/ -v
 ```
 
-## Kod Standartlari
-| Kural | Aciklama |
-|-------|----------|
-| Lint | `ruff check reymen/` (on-commit otomatik) |
-| Format | `ruff format reymen/` |
-| Guvenlik | `bandit -r reymen/ -ll` (on-commit otomatik) |
-| `shell=True` | KESINLIKLE KULLANMA |
-| `except: pass` | Sessiz except KABUL EDILMEZ, logla |
-| Tip ipucu | Mumkunse ekle |
-| Test | Her yeni ozellik icin test sart |
+## 📝 Katkı Süreci
 
-## PR Sureci
-1. Feature branch'inde kodla
-2. Test ekle (happy path + 1 hata senaryosu)
-3. `pre-commit` calistir: `pre-commit run --all-files`
-4. PR ac, aciklama yaz (`Closes #N` eklemeyi unutma)
-5. CI gecip gecmedigini kontrol et
-6. Review bekle
+1. **Issue aç** — Ne yapmak istediğini önce tartışalım
+2. **Branch aç** — `feature/` veya `fix/` önekiyle
+3. **Kodla** — Mevcut stile uygun yaz
+4. **Test ekle** — Yeni kod %70+ coverage
+5. **Lint kontrolü** — `ruff check .`
+6. **PR aç** — Template'i doldur
 
-## Proje Yapisi
+## ✅ Kod Standartları
+
+| Kural | Açıklama |
+|:------|:---------|
+| Türkçe docstring | Tüm fonksiyonlar Türkçe açıklama |
+| Ruff uyumu | `ruff check . --fix` ile düzelt |
+| Except pass yok | `except: pass` kullanma, en az `logging.warning` |
+| Tip ipuçları | Mümkünse type hint ekle |
+| Testler | `tests/` dizininde, ilgili modülün testi |
+
+## 🧪 Test
+
+```bash
+# Tüm testler
+pytest tests/ -v
+
+# Coverage ile
+pytest --cov=reymen tests/
+
+# Belirli modül
+pytest tests/test_beyin.py -v
+
+# Hızlı (timeout hassas testler atlanır)
+pytest tests/ -v --ignore=tests/hermes_legacy
 ```
-reymen/
-  core/           # Ana moduller (session_db, config_manager, ...)
-  cereyan/        # Ogrene dongusu, self-improvement
-  hafiza/         # Memory management
-  guvenlik/       # Guvenlik katmani (redact, guardrails, oauth)
-  arac/           # Araclar (tool registry, web search, ...)
-  ag/             # Gateway, bot, protocol
-  sistem/         # CLI, plugin, cron, terminal backends
-  reymen_cli/     # CLI komutlari
-  scripts/        # Yardimci scriptler
-  test/           # Testler
-tests/            # Entegrasyon testleri
-```
 
-## Iletisim
+## 🐛 Hata Bildirimi
+
+Issue template'ini kullan:
+- Hangi ortam (OS, Python versiyonu)
+- Hata mesajı/log
+- Tekrarlama adımları
+- Beklenen davranış
+
+## 💬 İletişim
+
 - Telegram: @Pasa_38
-- E-posta: marko@reymen.dev
-- GitHub Issues: Hata ve ozellik talepleri
+- GitHub Issues: Tercih edilen yöntem

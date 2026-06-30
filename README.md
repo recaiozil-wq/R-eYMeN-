@@ -1,238 +1,166 @@
 [![CI](https://github.com/Watcher-Hermes/ReYMeN-Ajan/actions/workflows/ci.yml/badge.svg)](https://github.com/Watcher-Hermes/ReYMeN-Ajan/actions/workflows/ci.yml)
-[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](https://python.org)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![Version](https://img.shields.io/badge/Version-0.9.0--beta-orange)](https://github.com/Watcher-Hermes/ReYMeN-Ajan/releases)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
 ---
 
-## ??? Topluluk / Community
+# 🤖 ReYMeN — Türkçe Otonom AI Asistanı
 
-| Kanal | Link |
-|-------|------|
-| GitHub Issues | [Hata bildir / Oneri yap](https://github.com/Watcher-Hermes/ReYMeN-Ajan/issues/new/choose) |
-| Telegram | @Pasa_38 ile iletisim |
-| Katki | [CONTRIBUTING.md](CONTRIBUTING.md) |
-| Kod Davranisi | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) |
-| Guvenlik | [SECURITY.md](SECURITY.md) |
-| Lisans | MIT - [LICENSE](LICENSE) |
-
----
-
-# 🤖 ReYMeN — Otonom Görev Çözücü
-
-**Türkçe yapay zeka asistanı.** Çoklu-provider LLM katmanı, araç çağrı motoru, kapalı öğrenme döngüsü ve A2A mesajlaşma ile kendi kendini geliştiren otonom bir sistem.
-
-![Python](https://img.shields.io/badge/Python-3.11+-blue)
-![License](https://img.shields.io/badge/License-MIT-green)
-![Version](https://img.shields.io/badge/Version-0.9.0-orange)
-
----
-
-## 📦 Özellikler
+**ReYMeN, çoklu-provider LLM katmanı, araç çağrı motoru ve kapalı öğrenme döngüsü ile çalışan, tamamen Türkçe otonom bir yapay zeka asistanıdır.**
 
 | Özellik | Açıklama |
-|---------|----------|
-| 🧠 **Çoklu LLM** | DeepSeek, OpenAI, Anthropic, Gemini, Groq, LM Studio, Ollama, OpenRouter — 12+ provider |
-| 🛠️ **Araç Çağrı Sistemi** | 100+ araç: dosya, terminal, web, tarayıcı, görsel, video, ses |
-| 🔄 **A2A Mesajlaşma** | Agent'lar arası thread-safe kuyruk tabanlı iletişim |
+|:--------|:---------|
+| 🧠 **12+ LLM Provider** | DeepSeek, OpenAI, Anthropic, Gemini, Groq, xAI, OpenRouter, Ollama, LM Studio |
+| 🛠️ **100+ Araç** | Dosya, terminal, web, tarayıcı, görsel, video, ses, kanban |
+| 🔄 **Kapalı Öğrenme** | Hata→çözüm hafızası, self-improvement metrikleri |
 | 🧩 **Hook Sistemi** | 8 olay tipi (session/tur/araç/hata/context) |
+| 🌐 **Web UI** | FastAPI + HTMX yönetim paneli |
 | 📊 **Kanban** | Kart/kolon/öncelik/deadline yönetimi, WIP limit |
 | 💰 **Cost Tracking** | SQLite tabanlı API harcama takibi |
-| 🎬 **Video Araçları** | yt-dlp + ffmpeg wrapper |
-| 🌐 **Web UI** | FastAPI + HTMX yönetim paneli |
 | 🔐 **Güvenlik** | Guardrails, sandbox, PII redaction, path doğrulama |
 | 🧠 **Hafıza** | OnceHafıza (vektör), FTS5 session search, context compression |
-| 📈 **Self-Improvement** | Kalite metrikleri, trend analizi, otomatik iyileştirme |
-
----
-
-## 🏗️ Mimari
-
-```
-reymen/
-├── a2a.py                  # A2A mesajlaşma (Broker + Agent)
-├── cli.py                  # Görev 7 CLI
-├── cost_tracker.py         # API harcama takibi
-├── kanban.py               # Kanban Board + Worker
-├── platform_adapter.py     # WSL/Kali path çevirici
-├── self_improve.py         # Kalite metrikleri
-├── tui.py                  # Rich TUI (status bar, spinner)
-├── video_tools.py          # yt-dlp + ffmpeg
-├── web_ui.py               # FastAPI web paneli
-│
-├── ag/                     # Gateway & ACP
-├── arac/                   # Araç katmanı (100+ araç)
-├── cereyan/                # Ana işlem katmanı
-│   ├── conversation_loop.py    # Konuşma döngüsü
-│   ├── motor.py                # Eylem motoru
-│   ├── beyin.py                # LLM bağlantı katmanı
-│   ├── hook_dispatcher.py      # Olay/hook sistemi
-│   ├── broker.py               # Mesaj broker
-│   └── closed_learning_loop.py # Kapalı öğrenme döngüsü
-├── core/                   # Çekirdek modüller
-│   ├── model_adapter.py    # Model adapter (Ollama, OpenAI, Anthropic)
-│   ├── orchestrator.py     # Görev orkestratörü
-│   ├── ogrenme.py          # Hata→çözüm hafızası
-│   ├── mcp_server.py       # MCP sunucusu
-│   └── session_search.py   # FTS5 session arama
-├── guvenlik/               # Güvenlik katmanı
-├── hafiza/                 # Hafıza katmanı
-├── sistem/                 # CLI, agent lifecycle, sistem yönetimi
-└── windows/                # Windows otomasyon araçları
-```
+| 🤖 **Telegram Bot** | Çoklu bot desteği (Pasa_38, Kiral38, ReYMeNbot) |
 
 ---
 
 ## 🚀 Kurulum
 
-### Entry Points (Başlatma Yöntemleri)
-
-ReYMeN, ReYMeN gibi 4 farklı entry point ile başlatılabilir:
-
-| Yönlendirici | Tür | İçerik |
-|---|---|---|
-| `reymen\bin
-eymen.cmd` | `.cmd → python` | `reymen_launcher.py`'yi çağırır |
-| `venv\Scripts
-eymen.cmd` | `.cmd → python` | `reymen_launcher.py`'yi çağırır |
-| `venv\Scripts
-eymen.exe` | `.exe direkt` | PyInstaller derlenmiş binary (60MB) |
-| `~/.local/bin/reymen.exe` | `.exe direkt` | pip console_scripts stub (106KB) |
-
-```bash
-# En kolay: direkt reymen yaz (PATH'te varsa)
-reymen
-
-# veya proje içinden
-python reymen_launcher.py
-```
-
 ### Gereksinimler
 
-- Python 3.11+
+- Python **3.10**, **3.11** veya **3.12**
 - pip / venv
+- (Opsiyonel) ffmpeg — ses/video işleme için
+- (Opsiyonel) Playwright — tarayıcı otomasyonu için
 
-### Adımlar
+### Windows
 
-```bash
-# 1. Depoyu klonla
-git clone https://github.com/Q/reymen.git
-cd reymen
+```powershell
+# 1. Projeyi indir
+git clone https://github.com/Watcher-Hermes/ReYMeN-Ajan.git
+cd ReYMeN-Ajan
 
 # 2. Sanal ortam oluştur
 python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# veya Windows: venv\Scripts\activate
+venv\Scripts\activate
+
+# 3. Bağımlılıkları yükle (temel)
+pip install -r requirements.txt
+
+# 4. (Opsiyonel) Tüm özellikler için
+pip install -e ".[full]"
+
+# 5. API anahtarlarını ayarla
+cp .env.example .env
+# .env dosyasını düzenle: en az DEEPSEEK_API_KEY gir
+```
+
+### Linux / Mac
+
+```bash
+# 1. Projeyi indir
+git clone https://github.com/Watcher-Hermes/ReYMeN-Ajan.git
+cd ReYMeN-Ajan
+
+# 2. Sanal ortam oluştur
+python3 -m venv venv
+source venv/bin/activate
 
 # 3. Bağımlılıkları yükle
 pip install -r requirements.txt
 
-# 4. Playwright (tarayıcı otomasyonu için)
-pip install playwright
-playwright install chromium
+# 4. (Opsiyonel) Tüm özellikler
+pip install -e ".[full]"
 
-# 5. Ortam değişkenlerini ayarla
+# 5. API anahtarlarını ayarla
 cp .env.example .env
-# .env dosyasını düzenle: API key'lerini gir
+chmod 600 .env
+nano .env
 ```
 
-### Ortam Değişkenleri
+### Tek Komut Kurulum
+
+```bash
+# Linux/Mac
+curl -fsSL https://raw.githubusercontent.com/Watcher-Hermes/ReYMeN-Ajan/main/install.sh | bash
+
+# Windows PowerShell
+irm https://raw.githubusercontent.com/Watcher-Hermes/ReYMeN-Ajan/main/install.ps1 | iex
+```
+
+---
+
+## ⚙️ Ortam Değişkenleri
+
+`.env.example` dosyasını `.env` olarak kopyala ve düzenle:
 
 | Değişken | Zorunlu | Açıklama |
-|----------|---------|----------|
-| `DEEPSEEK_API_KEY` | Evet | DeepSeek API anahtarı |
-| `OPENAI_API_KEY` | Hayır | OpenAI API anahtarı |
-| `ANTHROPIC_API_KEY` | Hayır | Anthropic Claude API anahtarı |
-| `REYMEN_MODEL` | Hayır | Varsayılan model (deepseek-v4-flash) |
-| `FAL_KEY` | Hayır | FAL.ai görsel oluşturma |
-| `CONTEXT_ESIK` | Hayır | Context sıkıştırma eşiği (0.50) |
+|:---------|:-------:|:---------|
+| `DEEPSEEK_API_KEY` | **Evet** | Ana LLM provider (en uyumlu) |
+| `BOT_TOKEN_PASA` | Hayır | Pasa_38 Telegram Bot token |
+| `BOT_TOKEN_KRAL` | Hayır | Kiral38 Telegram Bot token |
+| `BOT_TOKEN_REYMEN` | Hayır | ReYMeN_ReYMeNbot token |
+| `OPENAI_API_KEY` | Hayır | OpenAI yedek provider |
+| `ANTHROPIC_API_KEY` | Hayır | Anthropic Claude yedek |
+| `GROQ_API_KEY` | Hayır | Groq yedek provider |
+| `OPENROUTER_API_KEY` | Hayır | OpenRouter yedek |
+| `XAI_API_KEY` | Hayır | xAI/Grok yedek |
+| `FAL_KEY` | Hayır | Görsel oluşturma (FAL.ai) |
+
+> 💡 Sadece **DEEPSEEK_API_KEY** zorunlu. Diğerleri boş kalırsa o provider pasif olur.
 
 ---
 
 ## 🎮 Kullanım
 
-### CLI Modu
+### CLI (REPL)
 
 ```bash
-# Interaktif CLI başlat
-python -m reymen
+# Proje dizininde
+python reymen_launcher.py
 
-# Durum kontrolü
-python -m reymen status
+# Veya PATH varsa
+reymen
 
-# Maliyet görüntüle
-python -m reymen cost
+# Tek soru (one-shot)
+python reymen_launcher.py -z "merhaba"
 
-# Kalite raporu
-python -m reymen quality
-
-# Kanban yönetimi
-python -m reymen kanban
-
-# Video indirme
-python -m reymen video download <url>
-
-# A2A mesajlaşma testi
-python -m reymen a2a
+# Versiyon kontrol
+python reymen_launcher.py --version
 ```
 
-### Python API
+### Telegram Bot
 
-```python
-from reymen.a2a import Broker, Agent, Message
+```bash
+# Bot'u başlat
+python reymen_launcher.py --bot pasa
 
-broker = Broker()
-alice = Agent("alice", broker)
-bob = Agent("bob", broker)
-
-alice.send("bob", "Merhaba!")
-msg = bob.receive()
-print(msg.content)  # Merhaba!
+# Tüm botlar
+python reymen_launcher.py --bot all
 ```
 
 ### Web UI
 
 ```bash
 python -m reymen web
-# http://localhost:8080 adresinde açılır
+# http://localhost:8080
 ```
 
----
+### Python API
 
-## 🧩 Araç Kataloğu
+```python
+from reymen.cereyan.beyin import Beyin
+from reymen.cereyan.motor import Motor
+from reymen.cereyan.conversation_loop import ConversationLoop
 
-| Kategori | Araçlar |
-|----------|---------|
-| 🌐 **Tarayıcı** | BROWSER_HEADLESS, BROWSER_FILL, BROWSER_CLICK, BROWSER_WAIT, BROWSER_SELECT, BROWSER_SNAPSHOT, BROWSER_HTML, BROWSER_SCROLL, BROWSER_TABS, BROWSER_NEW_TAB, BROWSER_BACK/FORWARD, BROWSER_HOVER |
-| 📁 **Dosya** | DOSYA_OKU, DOSYA_YAZ, DOSYA_SIL, DOSYA_KOPYALA, DOSYA_TAŞI |
-| 💻 **Terminal** | KOMUT_CALISTIR, PYTHON_CALISTIR, SHELL_SCRIPT |
-| 🌍 **Web** | WEB_ARA, WEB_EXTRACT, SCREEN_SCRAPE |
-| 🖼️ **Görsel** | RESIM_OLUSTUR (FAL), VISION_ANALIZ, EKRAN_GORUNTUSU |
-| 🎵 **Ses** | SES_KAYDET, SES_OKU, TTS_SOYLE |
-| 🎬 **Video** | VIDEO_INDIR, VIDEO_DONUSTUR, VIDEO_KES, SES_CIKAR |
-| 📊 **Kanban** | KART_OLUSTUR, KART_LISTELE, KART_TAMAMLA, KART_ENGELLE |
-| 🔐 **Güvenlik** | ONAY_ISTE, GUVENLI_KONTROL, PII_TEMIZLE |
-| 🔄 **Sistem** | SUPERVISOR_RAPOR, HATA_COZ, OGREN, DURUM |
-
----
-
-## 🔌 Entegrasyonlar
-
-| Servis | Tür | Açıklama |
-|--------|-----|----------|
-| **DeepSeek** | LLM | Varsayılan model sağlayıcı |
-| **OpenAI** | LLM | GPT-4o / GPT-4o-mini |
-| **Anthropic** | LLM | Claude 3.5 Sonnet / Haiku |
-| **Google Gemini** | LLM | Gemini 1.5 Pro / Flash |
-| **LM Studio** | Lokal LLM | Localhost API |
-| **Ollama** | Lokal LLM | Localhost API |
-| **OpenRouter** | LLM | Çoklu model yönlendirme |
-| **FAL.ai** | Görsel | Resim oluşturma + vision |
-| **yt-dlp** | Video | Video indirme |
-| **ffmpeg** | Medya | Dönüştürme/kırpma |
-| **Playwright** | Tarayıcı | Headless browser otomasyonu |
-| **MCP** | Protokol | Model Context Protocol sunucusu |
+beyin = Beyin(config={"provider": "deepseek", "model": "deepseek-v4-flash"})
+motor = Motor()
+cl = ConversationLoop(motor=motor, beyin=beyin)
+sonuc = cl.run_conversation("Merhaba, nasılsın?")
+print(sonuc["yanit"])
+```
 
 ---
 
@@ -240,45 +168,81 @@ python -m reymen web
 
 ```bash
 # Tüm testler
-python -m pytest tests/
+pytest tests/ -v
+
+# Coverage ile
+pytest --cov=reymen tests/
 
 # Belirli modül
-python -m pytest tests/test_a2a.py -v
-python -m pytest tests/test_hook_dispatcher.py -v
-
-# Coverage
-python -m pytest --cov=reymen tests/
+pytest tests/test_beyin.py -v
 ```
 
 ---
 
-## 📚 Dokümantasyon
+## 🏗️ Proje Yapısı
 
-- [API Referansı](docs/API.md) — Modül ve sınıf dokümantasyonu
-- [Değişiklik Günlüğü](CHANGELOG.md)
-- [Katkı Rehberi](CONTRIBUTING.md)
+```
+ReYMeN-Ajan/
+├── reymen_launcher.py      # Ana giriş noktası
+├── config.yaml             # Merkezi yapılandırma
+├── .ReYMeN/                # Çalışma zamanı verileri
+│   ├── SOUL.md             # Kişilik tanımı
+│   ├── durum.json          # Proje durumu
+│   └── session.db          # SQLite FTS5 oturum geçmişi
+├── reymen/
+│   ├── ag/                 # Gateway katmanı (Telegram/Discord/WhatsApp)
+│   ├── arac/               # Araç katmanı (100+ araç)
+│   ├── cereyan/            # Ana işlem katmanı
+│   │   ├── beyin.py        # LLM bağlantı katmanı
+│   │   ├── motor.py        # Eylem motoru
+│   │   └── conversation_loop.py  # Konuşma döngüsü
+│   ├── core/               # Çekirdek modüller
+│   ├── guvenlik/           # Güvenlik katmanı
+│   ├── hafiza/             # Hafıza katmanı
+│   └── sistem/             # Sistem yönetimi
+└── tests/                  # Test dosyaları
+```
 
 ---
 
-## 🛣️ Yol Haritası
+## 🔌 Entegrasyonlar
 
-- [x] Çoklu LLM provider desteği
-- [x] Araç çağrı sistemi (100+ araç)
-- [x] A2A mesajlaşma prototipi
-- [x] Hook/olay sistemi
-- [x] Kanban board
+| Servis | Tür | Durum |
+|:-------|:---:|:------|
+| **DeepSeek** | LLM | ✅ Varsayılan |
+| **OpenAI** | LLM | ✅ |
+| **Anthropic** | LLM | ✅ |
+| **Google Gemini** | LLM | ✅ |
+| **Groq** | LLM | ✅ |
+| **xAI (Grok)** | LLM | ✅ |
+| **OpenRouter** | LLM | ✅ |
+| **Ollama** | LLM (lokal) | ✅ |
+| **LM Studio** | LLM (lokal) | ✅ |
+| **Telegram** | Mesajlaşma | ✅ |
+| **Discord** | Mesajlaşma | ✅ |
+| **FAL.ai** | Görsel | ✅ |
+| **yt-dlp** | Video | ✅ |
+| **Playwright** | Tarayıcı | ✅ |
+
+---
+
+## 🗺️ Yol Haritası
+
+- [x] Çoklu LLM provider
+- [x] 100+ araç
+- [x] Telegram bot (çoklu)
 - [x] Web UI
-- [x] MCP Server
-- [x] Hata→çözüm öğrenme
-- [x] Tarayıcı otomasyonu
+- [x] Kapalı öğrenme döngüsü
+- [x] Kanban board
+- [x] Hata→çözüm hafızası
 - [ ] Çoklu agent orchestration
-- [ ] Dağıtık A2A (HTTP transport)
-- [ ] Görsel hafıza (multimodal log)
-- [ ] Eklenti/plugin marketi
+- [ ] WhatsApp entegrasyonu
+- [ ] Dağıtık A2A
+- [ ] Eklenti marketi
 
 ---
 
-## ⚖️ Lisans
+## 📜 Lisans
 
 MIT License — bakınız [LICENSE](LICENSE)
 
@@ -286,12 +250,20 @@ MIT License — bakınız [LICENSE](LICENSE)
 
 ## 🤝 Katkı
 
-Pull request'ler açıktır. Büyük değişikliklerden önce lütfen issue açın.
+Pull request'ler açıktır! [CONTRIBUTING.md](CONTRIBUTING.md) dosyasına bak.
 
-```bash
-# Geliştirme kurulumu
-pip install -r requirements-dev.txt
-pre-commit install
-```
-/bin/bash: line 5: C:/Users/marko/AppData/Local/hermes/profiles/kiral38/cache/terminal/hermes-snap-bbb638e85925.sh: No such file or directory
-/bin/bash: line 6: C:/Users/marko/AppData/Local/hermes/profiles/kiral38/cache/terminal/hermes-cwd-bbb638e85925.txt: No such file or directory
+**Öncelikli ihtiyaçlar:**
+- Test coverage artırma (%6 → %50+)
+- Linux/macOS testleri
+- Dokümantasyon
+- Hata raporları
+
+---
+
+## 💬 Topluluk
+
+| Kanal | Link |
+|:------|:-----|
+| GitHub Issues | [Hata bildir / Öneri yap](https://github.com/Watcher-Hermes/ReYMeN-Ajan/issues/new/choose) |
+| Telegram | @Pasa_38 |
+| Discord | (yakında) |

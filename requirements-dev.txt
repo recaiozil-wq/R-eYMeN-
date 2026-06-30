@@ -1,0 +1,18 @@
+# ── Geliştirme Bağımlılıkları ──
+# pip install -r requirements-dev.txt
+
+# Test
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-timeout>=2.0.0
+pytest-asyncio>=0.21.0
+
+# Code quality
+ruff>=0.6.0
+bandit>=1.7.0
+pre-commit>=3.0.0
+
+# Type checking (opsiyonel)
+# mypy>=1.0.0
+# types-requests
+# types-PyYAML

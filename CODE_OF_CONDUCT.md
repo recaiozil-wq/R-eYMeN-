@@ -1,26 +1,35 @@
 # Katılımcı Sözleşmesi / Contributor Covenant Code of Conduct
 
-## Taahhüdümüz / Our Pledge
+## Taahhüdümüz
 
-Açık ve kapsayıcı bir topluluk ortamı sağlamak adına, herkesin katılımını teşvik ederiz.
+Açık ve dostça bir ortam sağlamak için taahhüt ediyoruz. Yaş, beden ölçüsü, engellilik, etnik köken, cinsiyet kimliği, deneyim seviyesi, milliyet, kişisel görünüm, ırk, din veya cinsel kimlikten bağımsız olarak herkesin katılımına açığız.
 
-## Standartlarımız / Our Standards
+## Standartlarımız
 
-Olumlu davranışlar:
-- Empati ve nezaket
-- Farklı bakış açılarına saygı
-- Yapıcı geri bildirim
-- Hatalardan ders çıkarma
+### Olumlu davranışlar
 
-Kabul edilemez davranışlar:
-- Taciz, ayrımcılık, hakaret
-- Cinsel içerikli dil/görseller
-- Kişisel bilgi ifşası
+- 🫂 Saygılı ve kapsayıcı dil kullanmak
+- 🧠 Yapıcı geri bildirim vermek
+- 🤝 Farklı bakış açılarına açık olmak
+- 🐛 Hataları kabullenmek ve düzeltmek
+- 🌟 Topluluk için en iyisini gözetmek
 
-## Uygulama / Enforcement
+### Kabul edilemez davranışlar
 
-İhlalleri **marko@reymen.dev** adresine bildirin. Tüm raporlar incelenir.
+- ❌ Cinsiyetçi/ırkçı/dil
+- ❌ Kişisel saldırılar
+- ❌ Taciz (public/private)
+- ❌ İzinsiz kişisel bilgi paylaşımı
+- ❌ Profesyonel olmayan davranışlar
 
-## Kaynak / Source
+## Uygulama
 
-Bu metin [Contributor Covenant v2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct.html) esas alınarak hazırlanmıştır.
+İhlalleri @Pasa_38'e Telegram veya GitHub üzerinden bildirin. Tüm şikayetler incelenecek ve uygun yaptırım uygulanacaktır.
+
+## Kapsam
+
+Bu davranış kuralları tüm topluluk alanlarında (GitHub Issues, PR, Discord, Telegram) geçerlidir.
+
+---
+
+*Bu metin Contributor Covenant v2.1'den uyarlanmıştır. https://www.contributor-covenant.org*
