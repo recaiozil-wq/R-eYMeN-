@@ -222,6 +222,7 @@ coverage/
 
 # Geçici scriptler (anahtar yazma, token test, vs.)
 _*.py
+!/reymen/cli/subcommands/_shared.py
 _*.bat
 _*.cmd
 
