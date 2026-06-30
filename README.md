@@ -144,9 +144,6 @@ bash scripts/install-hooks.sh
 | Değişken | Zorunlu | Açıklama |
 |:---------|:-------:|:---------|
 | `DEEPSEEK_API_KEY` | **Evet** | Ana LLM provider (en uyumlu) |
-| `BOT_TOKEN_PASA` | Hayır | Pasa_38 Telegram Bot token |
-| `BOT_TOKEN_KRAL` | Hayır | Kiral38 Telegram Bot token |
-| `BOT_TOKEN_REYMEN` | Hayır | ReYMeN_ReYMeNbot token |
 | `OPENAI_API_KEY` | Hayır | OpenAI yedek provider |
 | `ANTHROPIC_API_KEY` | Hayır | Anthropic Claude yedek |
 | `GROQ_API_KEY` | Hayır | Groq yedek provider |
@@ -155,6 +152,7 @@ bash scripts/install-hooks.sh
 | `FAL_KEY` | Hayır | Görsel oluşturma (FAL.ai) |
 
 > 💡 Sadece **DEEPSEEK_API_KEY** zorunlu. Diğerleri boş kalırsa o provider pasif olur.
+> 🤖 Telegram bot token'ları (`BOT_TOKEN_PASA`, `BOT_TOKEN_KRAL`, `BOT_TOKEN_REYMEN`) gerektiğinde `.env`'ye elle eklenir — kurulum için zorunlu değil.
 
 ---
 
