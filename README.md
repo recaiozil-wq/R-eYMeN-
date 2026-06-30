@@ -282,4 +282,3 @@ Pull request'ler açıktır! [CONTRIBUTING.md](CONTRIBUTING.md) dosyasına bak.
 | GitHub Issues | [Hata bildir / Öneri yap](https://github.com/recaiozil-wq/R-eYMeN-/issues/new/choose) |
 | Telegram | @Pasa_38 |
 | Discord | (yakında) |
-# Pre-commit hook test
