@@ -288,4 +288,3 @@ tests/hermes_legacy/
 # Coverage (runtime)
 .coverage
 .cov_*.json
-reymen/cereyan/.ReYMeN/skills_index.db
