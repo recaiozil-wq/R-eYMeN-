@@ -193,9 +193,13 @@ discover_builtin_tools()
 #   - tui_gateway/server.py     -> inline on startup (no event loop)
 #   - acp_adapter/server.py     -> asyncio.to_thread on session init
 
-# Plugin tool discovery — ReYMeN bagimsiz modu
-from reymen.sistem.hermes_uyum import discover_plugins as _reymen_discover
+# Plugin tool discovery — oncek ReYMeN uyumluluk katmani
 try:
+    from hermes_cli.plugins import discover_plugins
+    discover_plugins()
+except ImportError:
+    # ReYMeN bagimsiz modu
+    from reymen.sistem.hermes_uyum import discover_plugins as _reymen_discover
     _reymen_discover()
 except Exception as e:
     logger.debug("Plugin discovery failed: %s", e)
@@ -304,10 +308,18 @@ def get_tool_definitions(
     # invalidate hook on every config-writer.
     if quiet_mode:
         try:
-            from reymen.sistem.hermes_uyum import get_config_path
+            from hermes_cli.config import get_config_path
             cfg_path = get_config_path()
             cfg_stat = cfg_path.stat()
             cfg_fp = (cfg_stat.st_mtime_ns, cfg_stat.st_size)
+        except ImportError:
+            from reymen.sistem.hermes_uyum import get_config_path as _r_cfg
+            cfg_path = _r_cfg()
+            try:
+                cfg_stat = cfg_path.stat()
+                cfg_fp = (cfg_stat.st_mtime_ns, cfg_stat.st_size)
+            except (FileNotFoundError, OSError):
+                cfg_fp = None
         except (FileNotFoundError, OSError):
             cfg_fp = None
         cache_key = (
@@ -544,8 +556,12 @@ def _resolve_active_context_length() -> int:
     back to a fixed token cutoff in that case.
     """
     try:
-        from reymen.sistem.hermes_uyum import load_config as _r_load
-        cfg = _r_load() or {}
+        try:
+            from hermes_cli.config import load_config as _load
+            cfg = _load() or {}
+        except ImportError:
+            from reymen.sistem.hermes_uyum import load_config as _r_load
+            cfg = _r_load() or {}
         model_cfg = cfg.get("model") if isinstance(cfg.get("model"), dict) else {}
         if not isinstance(model_cfg, dict):
             model_cfg = {}
@@ -848,7 +864,10 @@ def _emit_post_tool_call_hook(
     result *after* the gate (parsing the result is only worth it when a
     listener will actually consume it).
     """
-    from reymen.sistem.hermes_uyum import has_hook, invoke_hook
+    try:
+        from hermes_cli.plugins import has_hook, invoke_hook
+    except ImportError:
+        from reymen.sistem.hermes_uyum import has_hook, invoke_hook
     try:
         if not has_hook("post_tool_call"):
             return
@@ -997,9 +1016,11 @@ def handle_function_call(
 
     _tool_original_args = dict(function_args)
     if not skip_tool_request_middleware:
-        from reymen.sistem.hermes_uyum import apply_tool_request_middleware
-
         try:
+            from hermes_cli.middleware import apply_tool_request_middleware
+        except ImportError:
+            from reymen.sistem.hermes_uyum import apply_tool_request_middleware
+
             _tool_request_mw = apply_tool_request_middleware(
                 function_name,
                 function_args,
@@ -1031,8 +1052,10 @@ def handle_function_call(
         # here.
         if not skip_pre_tool_call_hook:
             block_message: Optional[str] = None
-            from reymen.sistem.hermes_uyum import get_pre_tool_call_block_message
             try:
+                from hermes_cli.plugins import get_pre_tool_call_block_message
+            except ImportError:
+                from reymen.sistem.hermes_uyum import get_pre_tool_call_block_message
                 block_message = get_pre_tool_call_block_message(
                     function_name,
                     function_args,
@@ -1129,7 +1152,10 @@ def handle_function_call(
                         session_id=session_id,
                         user_task=user_task,
                     )
-            from reymen.sistem.hermes_uyum import run_tool_execution_middleware
+            try:
+                from hermes_cli.middleware import run_tool_execution_middleware
+            except ImportError:
+                from reymen.sistem.hermes_uyum import run_tool_execution_middleware
 
             result = run_tool_execution_middleware(
                 function_name,
@@ -1171,7 +1197,10 @@ def handle_function_call(
         # valid string return wins; non-string returns are ignored.
         # Gated on has_hook so the no-listener path skips both the result
         # field derivation and the payload dispatch.
-        from reymen.sistem.hermes_uyum import has_hook, invoke_hook
+        try:
+            from hermes_cli.plugins import has_hook, invoke_hook
+        except ImportError:
+            from reymen.sistem.hermes_uyum import has_hook, invoke_hook
         try:
             if has_hook("transform_tool_result"):
                 status, error_type, error_message = _tool_result_observer_fields(result)
