@@ -138,6 +138,26 @@ def env_var_enabled(name: str, default: str = "") -> bool:
 # hermes_cli.config stub (minimal)
 # =============================================================================
 
+def atomic_yaml_write(data: Any, path: Union[str, Path], indent: int = 2) -> None:
+    """YAML dosyasi yaz — stub, atomic_json_write kullanir."""
+    try:
+        import yaml
+        with open(path, "w", encoding="utf-8") as f:
+            yaml.dump(data, f, indent=indent, allow_unicode=True)
+    except Exception as e:
+        logger.warning("[stub/atomic_yaml_write] YAML yazma hatasi: %s", e)
+
+
+def base_url_host_matches(url1: str, url2: str) -> bool:
+    """Iki URL'nin host kismini karsilastir."""
+    from urllib.parse import urlparse
+    try:
+        h1 = urlparse(url1).hostname or ""
+        h2 = urlparse(url2).hostname or ""
+        return h1.lower() == h2.lower()
+    except Exception:
+        return False
+
 def load_config() -> Dict[str, Any]:
     """Basit config yukleyici — .env dosyasindan okur."""
     import dotenv

@@ -117,6 +117,10 @@
       "durum": "var",
       "detay": "ReYMeN_cli/config.py + import hook (hermes_cli.config → ReYMeN_cli.config) — bagimsiz"
     },
+    "gateway": {
+      "durum": "var",
+      "detay": "30/30 gateway modulu bagimsiz — hermes_stubs paketi (account_usage, i18n, config) ile"
+    },
     "tts_stt": {
       "durum": "yok",
       "detay": "Hermes'te OpenAI TTS+Whisper var, ReYMeN'de yok"
