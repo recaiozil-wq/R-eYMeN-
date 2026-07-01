@@ -102,8 +102,8 @@
       "detay": "Hermes'te Ink/React TUI var, ReYMeN'de yok"
     },
     "browser_automation": {
-      "durum": "yok",
-      "detay": "Hermes'te Browser Use var, ReYMeN'de yok"
+      "durum": "var",
+      "detay": "reymen/arac/browser_engine.py + reymen/tools/browser_tool.py shim — bagimsiz"
     },
     "firecrawl_web": {
       "durum": "yok",
@@ -122,8 +122,8 @@
       "detay": "30/30 gateway modulu bagimsiz — hermes_stubs paketi (account_usage, i18n, config) ile"
     },
     "tts_stt": {
-      "durum": "yok",
-      "detay": "Hermes'te OpenAI TTS+Whisper var, ReYMeN'de yok"
+      "durum": "var",
+      "detay": "reymen/tools/tts_tool.py shim + voice_engine (edge-tts/faster-whisper) — bagimsiz"
     },
     "subagent": {
       "durum": "yok",
@@ -134,8 +134,8 @@
       "detay": "OpenRouter vision (meta-llama/llama-3.2-11b-vision-instruct)"
     },
     "web_arama": {
-      "durum": "kismen",
-      "detay": "DDGS backend='html' ile calisiyor, Firecrawl kadar guclu degil"
+      "durum": "tamam",
+      "detay": "8 provider (DDGS, Brave, Firecrawl, Exa, SearXNG, Tavily, xAI, Parallel) — bagimsiz"
     },
     "script_fix_sistemi": {
       "durum": "tamam",
@@ -168,9 +168,9 @@
     "@Pasa_38_bot": {"durum": "aktif", "profil": "default", "provider": "deepseek"}
   },
   "toplam_ozellik": 24,
-  "tamam": 14,
-  "kismen": 5,
-  "yok": 5,
+  "tamam": 17,
+  "kismen": 4,
+  "yok": 3,
   "kullanim_talimati": "DURUM_OKU() ile canli oku. DURUM_OKU(detay=1) ile detayli. DURUM_OKU(json) ile ham JSON.",
   "bot_talimati": "\uD83D\uDEA8 ZORUNLU: TUM botlar bu dosyayi okur. Kendi analizini YAPMA. Once DURUM_OKU() cagir.",
   "guncellenme_talimati": "'tamamladim' demeden ONCE: 1) DURUM_OKU() ile kontrol et 2) Dosyada degisiklik yap 3) durum.json'u guncelle 4) ANCAK o zaman 'tamam' de"

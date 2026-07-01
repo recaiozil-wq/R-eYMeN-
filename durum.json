@@ -1,10 +1,6 @@
 {
   "proje": "ReYMeN Agent",
-  "surum": "2026-07-01",
-  "son_guncelleme": "2026-07-01",
-  "guncelleyen_bot": "Cron Self-Improve",
-  "son_dongu": "2026-07-01T17:25:56",
-  "bot_uyari": "🚨 ZORUNLU: Bu dosyayi kullan. Kendi bilginle asla liste olusturma. Once DURUM_OKU() cagir.",
+  "surum": "2026-06-30",
   "botlar": {
     "pasa_38": {
       "profil": "default",
@@ -53,91 +49,5 @@
   "esit_mi": {
     "esit": true,
     "aciklama": "Tum botlar esit"
-  },
-  "self_improve": {
-    "kod_kalitesi": {
-      "toplam_dosya": 3070,
-      "toplam_satir": 1210319,
-      "test_dosyasi": 1957,
-      "test_satir": 656200,
-      "test_orani": 0.542,
-      "sinif_sayisi": 8562,
-      "fonk_sayisi": 68700,
-      "except_pass": 1686,
-      "todo": 18,
-      "fixme": 2,
-      "ortalama_dosya_boyut": 394.2,
-      "import_hatali": 0
-    },
-    "trend": {
-      "donem_gun": 7,
-      "toplam_adim": 7797,
-      "ortalama_skor": 0.866,
-      "gecme_orani": 0.930,
-      "dusuk_kalite": 549,
-      "not_dagilimi": {
-        "A": 3498,
-        "B": 3750,
-        "F": 549
-      }
-    },
-    "haftalik_ilerleme": [
-      {"hafta": "06.05", "ortalama": 0.0, "adim": 0},
-      {"hafta": "13.05", "ortalama": 0.0, "adim": 0},
-      {"hafta": "20.05", "ortalama": 0.0, "adim": 0},
-      {"hafta": "27.05", "ortalama": 0.0, "adim": 0},
-      {"hafta": "03.06", "ortalama": 0.0, "adim": 0},
-      {"hafta": "10.06", "ortalama": 0.0, "adim": 0},
-      {"hafta": "17.06", "ortalama": 0.0, "adim": 0},
-      {"hafta": "24.06", "ortalama": 0.866, "adim": 7797}
-    ],
-    "aktif_hedefler": [],
-    "yeni_hedef": null,
-    "oneriler": [
-      "Cok hata var — input validasyonu ve hata yakalama (try/except) ekle.",
-      "Yuksek token kullanimi — prompt'u kisalt veya ozetle.",
-      "Adim basarisiz — hata loglarini inceleyip kok nedeni bul."
-    ]
-  },
-  "ozellikler": {
-    "beyin_llm": {"durum": "tamam", "detay": "DeepSeek v4-flash (birincil), OpenRouter (fallback). 7 provider destegi."},
-    "konusma_dongusu": {"durum": "tamam", "detay": "conversation_loop.py — ReAct loop, tool_call, OnceHafiza, web arama, vision"},
-    "motor_tool_engine": {"durum": "tamam", "detay": "motor.py — 675+ tool, DURUM_OKU, PROFIL, SKILL, GUVENLI_CALISTIR"},
-    "once_hafiza": {"durum": "tamam", "detay": "SQLite ogrenme hafizasi, kademeli guven, TTL, soyut imza"},
-    "session_db": {"durum": "tamam", "detay": "FTS5 tam metin arama, konusma gecmisi saklama"},
-    "cron_scheduler": {"durum": "tamam", "detay": "bagimsiz — reymen/cron/ (jobs.py, scheduler.py, cronjob_tool.py)"},
-    "mcp_client": {"durum": "kismen", "detay": "3 dosya (mcp_catalog, mcp_client_tool, mcp_tool) — temel calisiyor"},
-    "telegram_gateway": {"durum": "tamam", "detay": "bagimsiz — reymen/gateway/ (platforms/telegram.py dahil)"},
-    "cli": {"durum": "tamam", "detay": "reymen_launcher.py — REPL + one-shot, renkli output, status bar"},
-    "soul_kisilik": {"durum": "tamam", "detay": "SOUL.md + AGENTS.md, profil bazli kisilik sistemi"},
-    "skills": {"durum": "kismen", "detay": "5 SKILL.md — Hermes'te 554, buyuk eksik"},
-    "plugin_sistemi": {"durum": "yok", "detay": "Hermes'te plugins/ var, ReYMeN'de hic yok"},
-    "web_ui": {"durum": "yok", "detay": "Hermes'te Electron + web UI var, ReYMeN'de yok"},
-    "tui_terminal_ui": {"durum": "yok", "detay": "Hermes'te Ink/React TUI var, ReYMeN'de yok"},
-    "browser_automation": {"durum": "yok", "detay": "Hermes'te Browser Use var, ReYMeN'de yok"},
-    "firecrawl_web": {"durum": "yok", "detay": "Hermes'te Firecrawl var, ReYMeN DDGS kullaniyor"},
-    "image_gen": {"durum": "var", "detay": "ReYMeN kendi image_gen_engine.py (FAL/OpenAI/xAI/Stub) — bagimsiz"},
-    "tts_stt": {"durum": "yok", "detay": "Hermes'te OpenAI TTS+Whisper var, ReYMeN'de yok"},
-    "subagent": {"durum": "yok", "detay": "Hermes'te delegate_task var, ReYMeN'de yok"},
-    "vision": {"durum": "kismen", "detay": "OpenRouter vision (meta-llama/llama-3.2-11b-vision-instruct)"},
-    "web_arama": {"durum": "kismen", "detay": "DDGS backend='html' ile calisiyor, Firecrawl kadar guclu degil"},
-    "script_fix_sistemi": {"durum": "tamam", "detay": "54 script, master_fix.py, terminal_tool.py — otonom hata cozme"},
-    "bagimsizlik": {"durum": "tamam", "detay": "0 Hermes import bagimliligi, tam bagimsiz calisir"},
-    "self_improve": {"durum": "tamam", "detay": "auto_improve_cycle() + SQLite kalici depolama + kod kalite analizi + trend takibi"},
-    "turkce_dokuman": {"durum": "tamam", "detay": "READMe, CONTRIBUTING, CHANGELOG, AGENTS.md Turkce"},
-    "github_repo": {"durum": "tamam", "detay": "Watcher-Hermes/ReYMeN-Ajan-v2 (public, MIT)"},
-    "coverage": {"durum": "kismen", "detay": "516 reymen dosyasi, %0.8 coverage — dusuk, test calismasi lazim"}
-  },
-  "aktif_ajanlar": {
-    "@ReYMeN_ReYMeNbot": {"durum": "aktif", "profil": "reymen", "provider": "deepseek"},
-    "@Kiral38bot": {"durum": "aktif", "profil": "kiral38", "provider": "deepseek"},
-    "@Pasa_38_bot": {"durum": "aktif", "profil": "default", "provider": "deepseek"}
-  },
-  "toplam_ozellik": 24,
-  "tamam": 14,
-  "kismen": 5,
-  "yok": 5,
-  "kullanim_talimati": "DURUM_OKU() ile canli oku. DURUM_OKU(detay=1) ile detayli. DURUM_OKU(json) ile ham JSON.",
-  "bot_talimati": "🚨 ZORUNLU: TUM botlar bu dosyayi okur. Kendi analizini YAPMA. Once DURUM_OKU() cagir.",
-  "guncellenme_talimati": "'tamamladim' demeden ONCE: 1) DURUM_OKU() ile kontrol et 2) Dosyada degisiklik yap 3) durum.json'u guncelle 4) ANCAK o zaman 'tamam' de"
+  }
 }
