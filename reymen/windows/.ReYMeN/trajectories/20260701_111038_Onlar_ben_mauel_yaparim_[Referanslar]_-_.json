@@ -1,0 +1,8 @@
+{
+  "hedef": "Onlar ben mauel yaparim\n\n[Referanslar]\n  - {\\\"anahtar\\\": \\\"onay_sureci_tamamlandi_20260621\\\", \\\"deger\\\": \\\"ReYMeN onay süreci başarıyla tamamlandı. Drift düzeltmesi, example.com verisi kaydı ve izleme mekanizması doğrulandı. Tüm sistem normal çalışıyor.\\\", \\\"etiketler\\\": [\\\"onay\\\", \\\"tamamlandi\\\", \\\"sistem_durumu\\\"]}: \n  - anahtar: drift_duzeltme_onayi_20260623, deger: ReYMeN hafıza drift düzeltmesi başarıyla tamamlandı ve onaylandı. Example.com verisi kaydedildi (tek kopya). İzleme mekanizması aktif (24 saat). Tüm tekrarlar temizlendi ve sistem optimize edildi., etiketler: onay, drift_duzeltme, basarili, tamam: \n  - {\\\"anahtar\\\": \\\"drift_duzeltme_plani_onay\\\", \\\"deger\\\": \\\"Kullanici tarafindan onaylanan drift duzeltme plani: 1) TEKRAR_EDEN_GRS - veri sil, 2) ASIRI_TEKRAR - gorev sil, 3) TAMAMLANMAMIS_GOREV - birlestir, 4) BIRLESTIR - birlestir, 5) TEMIZLE - temizle. TUM SORUNLAR COZULDU.\\\", \\\"etiketler\\\": [\\\"onay\\\", \\\"drift_duzeltme\\\", \\\"plan\\\"]}: ",
+  "model": "local",
+  "tamamlandi": true,
+  "adim_sayisi": 0,
+  "adimlar": [],
+  "tool_istatistik": {}
+}

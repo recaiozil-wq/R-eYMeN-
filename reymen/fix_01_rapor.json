@@ -1,0 +1,1282 @@
+{
+  "tarih": "2026-07-01T06:27:20.999347",
+  "kok": "C:\\Users\\marko\\Desktop\\Reymen Proje\\ReYMeN-Ajan\\reymen",
+  "islenen": [
+    {
+      "dosya": "a2a.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "a2a_distributed.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "a2a_transport.py",
+      "duzeltme": 9
+    },
+    {
+      "dosya": "ag\\acp_server.py",
+      "duzeltme": 11
+    },
+    {
+      "dosya": "ag\\agent_runtime.py",
+      "duzeltme": 4
+    },
+    {
+      "dosya": "ag\\delegasyon.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "ag\\discord_bot.py",
+      "duzeltme": 10
+    },
+    {
+      "dosya": "ag\\gateway_runner.py",
+      "duzeltme": 22
+    },
+    {
+      "dosya": "ag\\gateway_yonetici.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "ag\\mcp_oauth.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "ag\\mcp_oauth_manager.py",
+      "duzeltme": 4
+    },
+    {
+      "dosya": "ag\\model_provider_router.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "ag\\ortak_komutlar.py",
+      "duzeltme": 8
+    },
+    {
+      "dosya": "ag\\platform_gateways.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "ag\\salted_gateway.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "ag\\subagent_runner.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "ag\\telegram_bot.py",
+      "duzeltme": 35
+    },
+    {
+      "dosya": "arac\\araclar_gelismis.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "arac\\araclar_goruntu.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "arac\\araclar_makro.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "arac\\araclar_nisan.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "arac\\araclar_ses.py",
+      "duzeltme": 5
+    },
+    {
+      "dosya": "arac\\araclar_telegram.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "arac\\araclar_video.py",
+      "duzeltme": 4
+    },
+    {
+      "dosya": "arac\\araclar_web.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "arac\\browser_engine.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "arac\\cli_commands.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "arac\\cua_motor_araci.py",
+      "duzeltme": 10
+    },
+    {
+      "dosya": "arac\\firecrawl_tool.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "arac\\image_gen_engine.py",
+      "duzeltme": 7
+    },
+    {
+      "dosya": "arac\\konusmadan_skill.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "arac\\mcp_client_tool.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "arac\\mcp_tool.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "arac\\native_mcp_client.py",
+      "duzeltme": 6
+    },
+    {
+      "dosya": "arac\\prompt_builder.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "arac\\skill_utils.py",
+      "duzeltme": 6
+    },
+    {
+      "dosya": "arac\\terminal_tool.py",
+      "duzeltme": 5
+    },
+    {
+      "dosya": "arac\\tool_executor.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "arac\\tool_registry.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "arac\\video_gen_engine.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "arac\\voice_engine.py",
+      "duzeltme": 7
+    },
+    {
+      "dosya": "arac\\web_search_engine.py",
+      "duzeltme": 6
+    },
+    {
+      "dosya": "cereyan\\.ReYMeN\\scripts\\skill_sync_oncehafiza.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "cereyan\\_clean_stale.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "cereyan\\_db_check.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "cereyan\\_run_cron_fix.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "cereyan\\adaptif_ogrenme.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "cereyan\\alt_ajan.py",
+      "duzeltme": 9
+    },
+    {
+      "dosya": "cereyan\\auto_budama.py",
+      "duzeltme": 5
+    },
+    {
+      "dosya": "cereyan\\beceri_kutuphanesi.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "cereyan\\beyin.py",
+      "duzeltme": 15
+    },
+    {
+      "dosya": "cereyan\\broker.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "cereyan\\closed_learning_loop.py",
+      "duzeltme": 9
+    },
+    {
+      "dosya": "cereyan\\codex_runtime.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "cereyan\\continuous_learning.py",
+      "duzeltme": 7
+    },
+    {
+      "dosya": "cereyan\\conversation_loop.py",
+      "duzeltme": 56
+    },
+    {
+      "dosya": "cereyan\\conversation_loop_run_conversation_yedek.py",
+      "duzeltme": 56
+    },
+    {
+      "dosya": "cereyan\\cron_scan_skills.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "cereyan\\dinamik_arac_uretici.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "cereyan\\gozlem.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "cereyan\\hata_cozucu.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "cereyan\\hata_siniflandirici.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "cereyan\\hook_handlers.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "cereyan\\kendini_anlat.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "cereyan\\meta_prompt_optimizer.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "cereyan\\motor.py",
+      "duzeltme": 35
+    },
+    {
+      "dosya": "cereyan\\once_hafiza.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "cereyan\\oz_tutarlilik.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "cereyan\\oz_yansima.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "cereyan\\planlayici.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "cereyan\\reflexion_motoru.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "cereyan\\robust_execution.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "cereyan\\scan_skills_apply.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "cereyan\\scan_skills_to_hafiza.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "cereyan\\scan_skills_to_hafiza_cron.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "cereyan\\scan_skills_to_hafiza_run.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "cereyan\\scan_skills_to_hafiza_v2.py",
+      "duzeltme": 4
+    },
+    {
+      "dosya": "cereyan\\skill_activator.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "cereyan\\skill_library.py",
+      "duzeltme": 5
+    },
+    {
+      "dosya": "cereyan\\steering_loop.py",
+      "duzeltme": 8
+    },
+    {
+      "dosya": "cereyan\\tools\\vision_tools.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "cereyan\\workflow_pipeline.py",
+      "duzeltme": 10
+    },
+    {
+      "dosya": "cereyan\\yetenek_fabrikasi.py",
+      "duzeltme": 4
+    },
+    {
+      "dosya": "core\\config_manager.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "core\\cron_manager.py",
+      "duzeltme": 5
+    },
+    {
+      "dosya": "core\\delegation_manager.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "core\\gateway_manager.py",
+      "duzeltme": 11
+    },
+    {
+      "dosya": "core\\guardrails_manager.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "core\\mcp_server.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "core\\model_provider.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "core\\oauth_manager.py",
+      "duzeltme": 7
+    },
+    {
+      "dosya": "core\\ogrenme.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "core\\self_heal.py",
+      "duzeltme": 4
+    },
+    {
+      "dosya": "core\\session_db.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "core\\session_search.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "core\\vector_memory.py",
+      "duzeltme": 10
+    },
+    {
+      "dosya": "cost_tracker.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "desktop\\_server_daemon.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "desktop\\server.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "guvenlik\\docker_sandbox.py",
+      "duzeltme": 6
+    },
+    {
+      "dosya": "guvenlik\\guvenli_sandbox.py",
+      "duzeltme": 5
+    },
+    {
+      "dosya": "guvenlik\\network_restriction.py",
+      "duzeltme": 5
+    },
+    {
+      "dosya": "guvenlik\\oauth2.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "guvenlik\\oauth_servis.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "guvenlik\\oauth_sistemi.py",
+      "duzeltme": 7
+    },
+    {
+      "dosya": "guvenlik\\security_audit.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "hafiza\\bounded_memory.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "hafiza\\context_compressor.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "hafiza\\gorev_hafiza.py",
+      "duzeltme": 4
+    },
+    {
+      "dosya": "hafiza\\gorev_once_kontrol.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "hafiza\\hafiza.py",
+      "duzeltme": 4
+    },
+    {
+      "dosya": "hafiza\\hafiza_budama.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "hafiza\\hafiza_genislet.py",
+      "duzeltme": 11
+    },
+    {
+      "dosya": "hafiza\\hata_analiz.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "hafiza\\memory_agent.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "hafiza\\memory_manager.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "hafiza\\memory_provider.py",
+      "duzeltme": 11
+    },
+    {
+      "dosya": "hafiza\\semantic_cache.py",
+      "duzeltme": 6
+    },
+    {
+      "dosya": "hafiza\\session_db.py",
+      "duzeltme": 16
+    },
+    {
+      "dosya": "hafiza\\vektor_bellek.py",
+      "duzeltme": 5
+    },
+    {
+      "dosya": "hafiza\\vektorel_hafiza.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "kanban.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "mcp\\__init__.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "mcp\\mcp_discovery.py",
+      "duzeltme": 4
+    },
+    {
+      "dosya": "mcp\\mcp_manager.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "mcp\\mcp_reconnect.py",
+      "duzeltme": 4
+    },
+    {
+      "dosya": "mcp\\mcp_tool.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "scripts\\_verify.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "scripts\\duplicate_module_detector.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "scripts\\durum_guncelle.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "scripts\\fix_03_coverage.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "scripts\\fix_04_guvenlik.py",
+      "duzeltme": 4
+    },
+    {
+      "dosya": "scripts\\fix_05_cli_bolme.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "scripts\\hermes_to_reymen.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "scripts\\master_fix.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "scripts\\motor_tool.py",
+      "duzeltme": 6
+    },
+    {
+      "dosya": "scripts\\reymen_analiz.py",
+      "duzeltme": 9
+    },
+    {
+      "dosya": "scripts\\reymen_skills_to_skillmd.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "scripts\\self_improve_cron.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "scripts\\startup_ekrani.py",
+      "duzeltme": 4
+    },
+    {
+      "dosya": "scripts\\subcommand_fix3.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "scripts\\terminal_tool.py",
+      "duzeltme": 4
+    },
+    {
+      "dosya": "scripts\\wifi_cihazlari.py",
+      "duzeltme": 5
+    },
+    {
+      "dosya": "self_improve.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\_check_remaining_dbs.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\_fix_skill_index.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "sistem\\_web_tetikleyici.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "sistem\\account_usage.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\auto_recovery.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "sistem\\baslangic_kontrol.py",
+      "duzeltme": 5
+    },
+    {
+      "dosya": "sistem\\batch_runner.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "sistem\\benchmark_tools.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\checkpoint_manager.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "sistem\\cli.py",
+      "duzeltme": 10
+    },
+    {
+      "dosya": "sistem\\cli_agent.py",
+      "duzeltme": 35
+    },
+    {
+      "dosya": "sistem\\cli_commands\\base.py",
+      "duzeltme": 7
+    },
+    {
+      "dosya": "sistem\\cli_commands\\config_commands.py",
+      "duzeltme": 9
+    },
+    {
+      "dosya": "sistem\\cli_commands\\edit_commands.py",
+      "duzeltme": 6
+    },
+    {
+      "dosya": "sistem\\cli_commands\\handlers\\edit\\copy_handler.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\cli_commands\\handlers\\session\\branch_handler.py",
+      "duzeltme": 5
+    },
+    {
+      "dosya": "sistem\\cli_commands\\handlers\\session\\handoff_handler.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "sistem\\cli_commands\\handlers\\session\\resume_handler.py",
+      "duzeltme": 4
+    },
+    {
+      "dosya": "sistem\\cli_commands\\handlers\\system\\goal_handler.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\cli_commands\\handlers\\tools\\background_handler.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "sistem\\cli_commands\\handlers\\tools\\browser_handler.py",
+      "duzeltme": 5
+    },
+    {
+      "dosya": "sistem\\cli_commands\\handlers\\tools\\curator_handler.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "sistem\\cli_commands\\session_commands.py",
+      "duzeltme": 48
+    },
+    {
+      "dosya": "sistem\\cli_commands\\system_commands.py",
+      "duzeltme": 11
+    },
+    {
+      "dosya": "sistem\\cli_commands_flat.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\cli_display.py",
+      "duzeltme": 6
+    },
+    {
+      "dosya": "sistem\\cli_helpers.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "sistem\\cli_main.py",
+      "duzeltme": 45
+    },
+    {
+      "dosya": "sistem\\cli_maintenance.py",
+      "duzeltme": 13
+    },
+    {
+      "dosya": "sistem\\cli_mixin_approval.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "sistem\\cli_mixin_browser.py",
+      "duzeltme": 5
+    },
+    {
+      "dosya": "sistem\\cli_mixin_core.py",
+      "duzeltme": 16
+    },
+    {
+      "dosya": "sistem\\cli_mixin_display.py",
+      "duzeltme": 19
+    },
+    {
+      "dosya": "sistem\\cli_mixin_fileops.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\cli_mixin_goals.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\cli_mixin_media.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\cli_mixin_skillstools.py",
+      "duzeltme": 4
+    },
+    {
+      "dosya": "sistem\\cli_mixin_voice.py",
+      "duzeltme": 9
+    },
+    {
+      "dosya": "sistem\\cli_session.py",
+      "duzeltme": 31
+    },
+    {
+      "dosya": "sistem\\cli_stream.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "sistem\\cli_tui.py",
+      "duzeltme": 48
+    },
+    {
+      "dosya": "sistem\\context_compressor.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\coverage_report.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "sistem\\credential_pool.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\cron_scheduler.py",
+      "duzeltme": 5
+    },
+    {
+      "dosya": "sistem\\display.py",
+      "duzeltme": 5
+    },
+    {
+      "dosya": "sistem\\durum.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "sistem\\durum_paylas.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "sistem\\gemini_cloudcode_adapter.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "sistem\\guncelle.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "sistem\\hata_topla.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "sistem\\hata_toplama.py",
+      "duzeltme": 4
+    },
+    {
+      "dosya": "sistem\\health_check.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\hook_dispatcher.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\hot_reload.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "sistem\\insights.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "sistem\\lmstudio_reasoning.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\main.py",
+      "duzeltme": 41
+    },
+    {
+      "dosya": "sistem\\marketplace.py",
+      "duzeltme": 4
+    },
+    {
+      "dosya": "sistem\\memory_provider.py",
+      "duzeltme": 11
+    },
+    {
+      "dosya": "sistem\\migrate_skills.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\mini_swe_runner.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "sistem\\model_tools.py",
+      "duzeltme": 12
+    },
+    {
+      "dosya": "sistem\\once_hafiza.py",
+      "duzeltme": 18
+    },
+    {
+      "dosya": "sistem\\ortak_komut.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\ortak_watchdog.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "sistem\\persistence.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "sistem\\plugin_loader.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "sistem\\plugin_manager.py",
+      "duzeltme": 9
+    },
+    {
+      "dosya": "sistem\\plugins\\browser_provider\\__init__.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\plugins\\delegation_provider\\__init__.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\plugins\\guardrails_provider\\__init__.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\plugins\\image_gen_provider\\__init__.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\plugins\\mcp_provider\\__init__.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\plugins\\web_search_provider\\__init__.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\profile_manager.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\provider_transport.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\ReYMeN_bootstrap.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "sistem\\ReYMeN_constants.py",
+      "duzeltme": 4
+    },
+    {
+      "dosya": "sistem\\ReYMeN_state.py",
+      "duzeltme": 19
+    },
+    {
+      "dosya": "sistem\\ReYMeN_time.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\run_agent.py",
+      "duzeltme": 57
+    },
+    {
+      "dosya": "sistem\\schema_manager.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\service_bridge.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "sistem\\session_search_tool.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "sistem\\sistem_sinyalleri.py",
+      "duzeltme": 6
+    },
+    {
+      "dosya": "sistem\\skill_activator.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\skill_aktive_et.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "sistem\\state_machine.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\stream_diag.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\stt_tool.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "sistem\\surekli_ogrenme.py",
+      "duzeltme": 5
+    },
+    {
+      "dosya": "sistem\\toolsets.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "sistem\\tts_stt_tool.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "sistem\\utils.py",
+      "duzeltme": 5
+    },
+    {
+      "dosya": "sistem\\webhook.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "sistem\\zamanlayici.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "telegram_bot\\__init__.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "tui.py",
+      "duzeltme": 7
+    },
+    {
+      "dosya": "video_tools.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "web_ui\\__init__.py",
+      "duzeltme": 12
+    },
+    {
+      "dosya": "web_ui\\auth.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "web_ui\\log_stream.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "web_ui\\module_discovery.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "web_ui\\process_manager.py",
+      "duzeltme": 3
+    },
+    {
+      "dosya": "windows\\otonom_nisan_olusturucu.py",
+      "duzeltme": 1
+    },
+    {
+      "dosya": "windows\\tor_otomasyonu.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "windows\\trajectory.py",
+      "duzeltme": 2
+    },
+    {
+      "dosya": "windows\\windows_entegrasyon.py",
+      "duzeltme": 6
+    },
+    {
+      "dosya": "windows\\windows_events.py",
+      "duzeltme": 1
+    }
+  ],
+  "atlanan": [],
+  "test_hata": [],
+  "toplam_duzeltme": 1391,
+  "test_gecen": [
+    "a2a.py",
+    "a2a_distributed.py",
+    "a2a_transport.py",
+    "ag\\acp_server.py",
+    "ag\\agent_runtime.py",
+    "ag\\delegasyon.py",
+    "ag\\discord_bot.py",
+    "ag\\gateway_runner.py",
+    "ag\\gateway_yonetici.py",
+    "ag\\mcp_oauth.py",
+    "ag\\mcp_oauth_manager.py",
+    "ag\\model_provider_router.py",
+    "ag\\ortak_komutlar.py",
+    "ag\\platform_gateways.py",
+    "ag\\salted_gateway.py",
+    "ag\\subagent_runner.py",
+    "ag\\telegram_bot.py",
+    "arac\\araclar_gelismis.py",
+    "arac\\araclar_goruntu.py",
+    "arac\\araclar_makro.py",
+    "arac\\araclar_nisan.py",
+    "arac\\araclar_ses.py",
+    "arac\\araclar_telegram.py",
+    "arac\\araclar_video.py",
+    "arac\\araclar_web.py",
+    "arac\\browser_engine.py",
+    "arac\\cli_commands.py",
+    "arac\\cua_motor_araci.py",
+    "arac\\firecrawl_tool.py",
+    "arac\\image_gen_engine.py",
+    "arac\\konusmadan_skill.py",
+    "arac\\mcp_client_tool.py",
+    "arac\\mcp_tool.py",
+    "arac\\native_mcp_client.py",
+    "arac\\prompt_builder.py",
+    "arac\\skill_utils.py",
+    "arac\\terminal_tool.py",
+    "arac\\tool_executor.py",
+    "arac\\tool_registry.py",
+    "arac\\video_gen_engine.py",
+    "arac\\voice_engine.py",
+    "arac\\web_search_engine.py",
+    "cereyan\\.ReYMeN\\scripts\\skill_sync_oncehafiza.py",
+    "cereyan\\_clean_stale.py",
+    "cereyan\\_db_check.py",
+    "cereyan\\_run_cron_fix.py",
+    "cereyan\\adaptif_ogrenme.py",
+    "cereyan\\alt_ajan.py",
+    "cereyan\\auto_budama.py",
+    "cereyan\\beceri_kutuphanesi.py",
+    "cereyan\\beyin.py",
+    "cereyan\\broker.py",
+    "cereyan\\closed_learning_loop.py",
+    "cereyan\\codex_runtime.py",
+    "cereyan\\continuous_learning.py",
+    "cereyan\\conversation_loop.py",
+    "cereyan\\conversation_loop_run_conversation_yedek.py",
+    "cereyan\\cron_scan_skills.py",
+    "cereyan\\dinamik_arac_uretici.py",
+    "cereyan\\gozlem.py",
+    "cereyan\\hata_cozucu.py",
+    "cereyan\\hata_siniflandirici.py",
+    "cereyan\\hook_handlers.py",
+    "cereyan\\kendini_anlat.py",
+    "cereyan\\meta_prompt_optimizer.py",
+    "cereyan\\motor.py",
+    "cereyan\\once_hafiza.py",
+    "cereyan\\oz_tutarlilik.py",
+    "cereyan\\oz_yansima.py",
+    "cereyan\\planlayici.py",
+    "cereyan\\reflexion_motoru.py",
+    "cereyan\\robust_execution.py",
+    "cereyan\\scan_skills_apply.py",
+    "cereyan\\scan_skills_to_hafiza.py",
+    "cereyan\\scan_skills_to_hafiza_cron.py",
+    "cereyan\\scan_skills_to_hafiza_run.py",
+    "cereyan\\scan_skills_to_hafiza_v2.py",
+    "cereyan\\skill_activator.py",
+    "cereyan\\skill_library.py",
+    "cereyan\\steering_loop.py",
+    "cereyan\\tools\\vision_tools.py",
+    "cereyan\\workflow_pipeline.py",
+    "cereyan\\yetenek_fabrikasi.py",
+    "core\\config_manager.py",
+    "core\\cron_manager.py",
+    "core\\delegation_manager.py",
+    "core\\gateway_manager.py",
+    "core\\guardrails_manager.py",
+    "core\\mcp_server.py",
+    "core\\model_provider.py",
+    "core\\oauth_manager.py",
+    "core\\ogrenme.py",
+    "core\\self_heal.py",
+    "core\\session_db.py",
+    "core\\session_search.py",
+    "core\\vector_memory.py",
+    "cost_tracker.py",
+    "desktop\\_server_daemon.py",
+    "desktop\\server.py",
+    "guvenlik\\docker_sandbox.py",
+    "guvenlik\\guvenli_sandbox.py",
+    "guvenlik\\network_restriction.py",
+    "guvenlik\\oauth2.py",
+    "guvenlik\\oauth_servis.py",
+    "guvenlik\\oauth_sistemi.py",
+    "guvenlik\\security_audit.py",
+    "hafiza\\bounded_memory.py",
+    "hafiza\\context_compressor.py",
+    "hafiza\\gorev_hafiza.py",
+    "hafiza\\gorev_once_kontrol.py",
+    "hafiza\\hafiza.py",
+    "hafiza\\hafiza_budama.py",
+    "hafiza\\hafiza_genislet.py",
+    "hafiza\\hata_analiz.py",
+    "hafiza\\memory_agent.py",
+    "hafiza\\memory_manager.py",
+    "hafiza\\memory_provider.py",
+    "hafiza\\semantic_cache.py",
+    "hafiza\\session_db.py",
+    "hafiza\\vektor_bellek.py",
+    "hafiza\\vektorel_hafiza.py",
+    "kanban.py",
+    "mcp\\__init__.py",
+    "mcp\\mcp_discovery.py",
+    "mcp\\mcp_manager.py",
+    "mcp\\mcp_reconnect.py",
+    "mcp\\mcp_tool.py",
+    "scripts\\_verify.py",
+    "scripts\\duplicate_module_detector.py",
+    "scripts\\durum_guncelle.py",
+    "scripts\\fix_03_coverage.py",
+    "scripts\\fix_04_guvenlik.py",
+    "scripts\\fix_05_cli_bolme.py",
+    "scripts\\hermes_to_reymen.py",
+    "scripts\\master_fix.py",
+    "scripts\\motor_tool.py",
+    "scripts\\reymen_analiz.py",
+    "scripts\\reymen_skills_to_skillmd.py",
+    "scripts\\self_improve_cron.py",
+    "scripts\\startup_ekrani.py",
+    "scripts\\subcommand_fix3.py",
+    "scripts\\terminal_tool.py",
+    "scripts\\wifi_cihazlari.py",
+    "self_improve.py",
+    "sistem\\_check_remaining_dbs.py",
+    "sistem\\_fix_skill_index.py",
+    "sistem\\_web_tetikleyici.py",
+    "sistem\\account_usage.py",
+    "sistem\\auto_recovery.py",
+    "sistem\\baslangic_kontrol.py",
+    "sistem\\batch_runner.py",
+    "sistem\\benchmark_tools.py",
+    "sistem\\checkpoint_manager.py",
+    "sistem\\cli.py",
+    "sistem\\cli_agent.py",
+    "sistem\\cli_commands\\base.py",
+    "sistem\\cli_commands\\config_commands.py",
+    "sistem\\cli_commands\\edit_commands.py",
+    "sistem\\cli_commands\\handlers\\edit\\copy_handler.py",
+    "sistem\\cli_commands\\handlers\\session\\branch_handler.py",
+    "sistem\\cli_commands\\handlers\\session\\handoff_handler.py",
+    "sistem\\cli_commands\\handlers\\session\\resume_handler.py",
+    "sistem\\cli_commands\\handlers\\system\\goal_handler.py",
+    "sistem\\cli_commands\\handlers\\tools\\background_handler.py",
+    "sistem\\cli_commands\\handlers\\tools\\browser_handler.py",
+    "sistem\\cli_commands\\handlers\\tools\\curator_handler.py",
+    "sistem\\cli_commands\\session_commands.py",
+    "sistem\\cli_commands\\system_commands.py",
+    "sistem\\cli_commands_flat.py",
+    "sistem\\cli_display.py",
+    "sistem\\cli_helpers.py",
+    "sistem\\cli_main.py",
+    "sistem\\cli_maintenance.py",
+    "sistem\\cli_mixin_approval.py",
+    "sistem\\cli_mixin_browser.py",
+    "sistem\\cli_mixin_core.py",
+    "sistem\\cli_mixin_display.py",
+    "sistem\\cli_mixin_fileops.py",
+    "sistem\\cli_mixin_goals.py",
+    "sistem\\cli_mixin_media.py",
+    "sistem\\cli_mixin_skillstools.py",
+    "sistem\\cli_mixin_voice.py",
+    "sistem\\cli_session.py",
+    "sistem\\cli_stream.py",
+    "sistem\\cli_tui.py",
+    "sistem\\context_compressor.py",
+    "sistem\\coverage_report.py",
+    "sistem\\credential_pool.py",
+    "sistem\\cron_scheduler.py",
+    "sistem\\display.py",
+    "sistem\\durum.py",
+    "sistem\\durum_paylas.py",
+    "sistem\\gemini_cloudcode_adapter.py",
+    "sistem\\guncelle.py",
+    "sistem\\hata_topla.py",
+    "sistem\\hata_toplama.py",
+    "sistem\\health_check.py",
+    "sistem\\hook_dispatcher.py",
+    "sistem\\hot_reload.py",
+    "sistem\\insights.py",
+    "sistem\\lmstudio_reasoning.py",
+    "sistem\\main.py",
+    "sistem\\marketplace.py",
+    "sistem\\memory_provider.py",
+    "sistem\\migrate_skills.py",
+    "sistem\\mini_swe_runner.py",
+    "sistem\\model_tools.py",
+    "sistem\\once_hafiza.py",
+    "sistem\\ortak_komut.py",
+    "sistem\\ortak_watchdog.py",
+    "sistem\\persistence.py",
+    "sistem\\plugin_loader.py",
+    "sistem\\plugin_manager.py",
+    "sistem\\plugins\\browser_provider\\__init__.py",
+    "sistem\\plugins\\delegation_provider\\__init__.py",
+    "sistem\\plugins\\guardrails_provider\\__init__.py",
+    "sistem\\plugins\\image_gen_provider\\__init__.py",
+    "sistem\\plugins\\mcp_provider\\__init__.py",
+    "sistem\\plugins\\web_search_provider\\__init__.py",
+    "sistem\\profile_manager.py",
+    "sistem\\provider_transport.py",
+    "sistem\\ReYMeN_bootstrap.py",
+    "sistem\\ReYMeN_constants.py",
+    "sistem\\ReYMeN_state.py",
+    "sistem\\ReYMeN_time.py",
+    "sistem\\run_agent.py",
+    "sistem\\schema_manager.py",
+    "sistem\\service_bridge.py",
+    "sistem\\session_search_tool.py",
+    "sistem\\sistem_sinyalleri.py",
+    "sistem\\skill_activator.py",
+    "sistem\\skill_aktive_et.py",
+    "sistem\\state_machine.py",
+    "sistem\\stream_diag.py",
+    "sistem\\stt_tool.py",
+    "sistem\\surekli_ogrenme.py",
+    "sistem\\toolsets.py",
+    "sistem\\tts_stt_tool.py",
+    "sistem\\utils.py",
+    "sistem\\webhook.py",
+    "sistem\\zamanlayici.py",
+    "telegram_bot\\__init__.py",
+    "tui.py",
+    "video_tools.py",
+    "web_ui\\__init__.py",
+    "web_ui\\auth.py",
+    "web_ui\\log_stream.py",
+    "web_ui\\module_discovery.py",
+    "web_ui\\process_manager.py",
+    "windows\\otonom_nisan_olusturucu.py",
+    "windows\\tor_otomasyonu.py",
+    "windows\\trajectory.py",
+    "windows\\windows_entegrasyon.py",
+    "windows\\windows_events.py"
+  ],
+  "sure": 2.0
+}
