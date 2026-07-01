@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # ReYMeN — Tek komut kurulum (Linux/Mac)
-# Kullanım: curl -fsSL https://raw.githubusercontent.com/recaiozil-wq/R-eYMeN-main/install.sh | bash
+# Kullanım: curl -fsSL https://raw.githubusercontent.com/recaiozil-wq/reymen-agean/main/install.sh | bash
 set -euo pipefail
 
-REPO="recaiozil-wq/R-eYMeN-
+REPO="recaiozil-wq/reymen-agean"
 BRANCH="main"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -69,8 +69,21 @@ pip install --upgrade pip
 pip install -r requirements.txt
 
 echo ""
-echo -e "${GREEN}=== Kurulum Tamamlandı! ===${NC}"
+echo "=== ReYMeN Agent v1.0 - Kurulum ==="
 echo ""
+
+# Git LFS kontrol
+if ! command -v git-lfs &>/dev/null 2>&1; then
+    echo "[!] Git LFS bulunamadi! LFS binary dosyalari inemez."
+    echo "    Yüklemek icin: https://git-lfs.com"
+    echo ""
+fi
+
+# LFS objelerini cek
+if [ -d ".git" ]; then
+    echo "[*] Git LFS objeleri cekiliyor..."
+    git lfs pull 2>/dev/null || true
+fi
 echo -e "Sonraki adımlar:"
 echo -e "  1. ${YELLOW}cd ReYMeN-Ajan && source venv/bin/activate${NC}"
 echo -e "  2. ${YELLOW}cp .env.example .env${NC}"

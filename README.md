@@ -1,7 +1,7 @@
-[![CI](https://github.com/recaiozil-wq/R-eYMeN-/actions/workflows/ci.yml/badge.svg)](https://github.com/recaiozil-wq/R-eYMeN-/actions/workflows/ci.yml)
+[![CI](https://github.com/recaiozil-wq/reymen-agean/actions/workflows/ci.yml/badge.svg)](https://github.com/recaiozil-wq/reymen-agean/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.1-orange)](https://github.com/recaiozil-wq/R-eYMeN-/releases)
+[![Version](https://img.shields.io/badge/Version-1.0.1-orange)](https://github.com/recaiozil-wq/reymen-agean/releases)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 
@@ -73,7 +73,7 @@ Donations (GitHub Sponsors, etc.) are not active yet. Will be considered if ther
 
 ```powershell
 # 1. Projeyi indir
-git clone https://github.com/recaiozil-wq/R-eYMeN-.git
+git clone https://github.com/recaiozil-wq/reymen-agean.git
 cd R-eYMeN-          # clone klasör adı: R-eYMeN-
 
 # 2. Sanal ortam oluştur
@@ -98,7 +98,7 @@ notepad .env          # en az DEEPSEEK_API_KEY gir
 
 ```bash
 # 1. Projeyi indir
-git clone https://github.com/recaiozil-wq/R-eYMeN-.git
+git clone https://github.com/recaiozil-wq/reymen-agean.git
 cd R-eYMeN-
 
 # 2. Sanal ortam oluştur
@@ -121,10 +121,10 @@ nano .env
 
 ```bash
 # Linux/Mac
-curl -fsSL https://raw.githubusercontent.com/recaiozil-wq/R-eYMeN-/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/recaiozil-wq/reymen-agean/main/install.sh | bash
 
 # Windows PowerShell
-irm https://raw.githubusercontent.com/recaiozil-wq/R-eYMeN-/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/recaiozil-wq/reymen-agean/main/install.ps1 | iex
 ```
 
 ### Pre-commit Hook (Çoklu Kopya Uyarısı)
@@ -153,6 +153,8 @@ bash scripts/install-hooks.sh
 
 > 💡 Sadece **DEEPSEEK_API_KEY** zorunlu. Diğerleri boş kalırsa o provider pasif olur.
 > 🤖 Telegram bot token'ları (`BOT_TOKEN_PASA`, `BOT_TOKEN_KRAL`, `BOT_TOKEN_REYMEN`) gerektiğinde `.env`'ye elle eklenir — kurulum için zorunlu değil.
+
+> **📦 Git LFS:** Repo binary dosyaları (.db, .bin, .sqlite3) Git LFS ile saklar. Clone sonrası `git lfs pull` ile çekmeyi unutma.
 
 ---
 

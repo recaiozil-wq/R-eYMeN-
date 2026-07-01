@@ -72,9 +72,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/recaiozil-wq/R-eYMeN-"
-Source = "https://github.com/recaiozil-wq/R-eYMeN-"
-"Hata Bildir" = "https://github.com/recaiozil-wq/R-eYMeN-/issues/new/choose"
+Homepage = "https://github.com/recaiozil-wq/reymen-agean"
+Source = "https://github.com/recaiozil-wq/reymen-agean"
+"Hata Bildir" = "https://github.com/recaiozil-wq/reymen-agean/issues/new/choose"
 
 [project.scripts]
 reymen = "reymen_launcher:main"

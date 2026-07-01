@@ -3,8 +3,22 @@ chcp 65001 >nul
 title ReYMeN Agent v1.0 - Tam Kurulum
 
 echo ============================================
-echo    ReYMeN Agent v1.0 - Tam Kurulum
+echo  ReYMeN Agent v1.0 - Kurulum
 echo ============================================
+
+:: Git LFS kontrol
+where git-lfs >nul 2>&1
+if %ERRORLEVEL% neq 0 (
+    echo [!] Git LFS bulunamadi! LFS binary dosyalari inemez.
+    echo     Yuklemek icin: git lfs install
+    echo.
+)
+
+:: Git LFS objelerini cek
+if exist ".git" (
+    echo [*] Git LFS objeleri cekiliyor...
+    git lfs pull 2>nul
+)
 echo.
 echo NOT: ReYMeN bagimsiz bir ajandir, Hermes gerektirmez.
 echo.
@@ -117,7 +131,7 @@ if not exist "reymen_launcher.py" (
     ) else (
         echo [!!] Proje dosyalari bulunamadi!
         echo     Bu script ReYMeN-Ajan klasoru icinde calistirilmali.
-        echo     veya: git clone https://github.com/recaiozil-wq/R-eYMeN-.git
+        echo     veya: git clone https://github.com/recaiozil-wq/reymen-agean.git
         pause
         exit /b
     )
@@ -277,6 +291,6 @@ echo     PowerShell (Yonetici):
 echo     Set-MpPreference -DisableRealtimeMonitoring $true
 echo     Sonra tekrar dene
 echo.
-echo  GitHub: https://github.com/recaiozil-wq/R-eYMeN-
+echo  GitHub: https://github.com/recaiozil-wq/reymen-agean
 echo.
 pause

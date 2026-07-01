@@ -14,4 +14,4 @@
 | E-posta | marko@reymen.dev |
 
 ## 🐛 Hata Bildirimi
-[Issue açın](https://github.com/recaiozil-wq/R-eYMeN-/issues/new/choose)
+[Issue açın](https://github.com/recaiozil-wq/reymen-agean/issues/new/choose)
