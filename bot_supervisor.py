@@ -1,9 +1,8 @@
-"""
-bot_supervisor.py — ReYMeN Bot Supervisor.
+"""bot_supervisor.py — ReYMeN Bot Supervisor.
 3 bot'u 3 farkli token ile baslatir, crash'te restart eder.
 
 Kullanim:
-    python bot_supervisor.py              # 3 botu baslat
+    python bot_supervisor.py              # 3 botu baslat (supervisor)
     python bot_supervisor.py --once       # Tek seferlik baslat
     python bot_supervisor.py --stop       # Tum botlari durdur
 """
@@ -27,22 +26,18 @@ log = logging.getLogger("supervisor")
 PROJE_KOK = Path(__file__).resolve().parent
 HERMES_BASE = Path.home() / "AppData" / "Local" / "hermes" / "profiles"
 
+# Proje .venv Python'unu kullan (uv yonetimli, tum bagimliliklari var)
+_venv_py = str(PROJE_KOK / ".venv" / "Scripts" / "python.exe")
+if Path(_venv_py).exists():
+    PYTHON = _venv_py
+else:
+    # Fallback: su anki yorumlayici
+    PYTHON = getattr(sys, "_base_executable", sys.executable)
+
 BOTLAR = [
-    {
-        "ad": "Pasa_38",
-        "profil": "default",
-        "env_anahtar": "TELEGRAM_BOT_TOKEN",
-    },
-    {
-        "ad": "Kiral38",
-        "profil": "kiral38",
-        "env_anahtar": "TELEGRAM_BOT_TOKEN",
-    },
-    {
-        "ad": "ReYMeN_Bot",
-        "profil": "reymen",
-        "env_anahtar": "TELEGRAM_BOT_TOKEN",
-    },
+    {"ad": "Pasa_38",  "profil": "default", "env_anahtar": "TELEGRAM_BOT_TOKEN"},
+    {"ad": "Kiral38",  "profil": "kiral38", "env_anahtar": "TELEGRAM_BOT_TOKEN"},
+    {"ad": "ReYMeN_Bot", "profil": "reymen", "env_anahtar": "TELEGRAM_BOT_TOKEN"},
 ]
 
 
@@ -82,14 +77,13 @@ class BotYonetici:
         env = os.environ.copy()
         env["TELEGRAM_BOT_TOKEN"] = token
         env["HERMES_PROFILE"] = self.profil
-        env["HERMES_GATEWAY"] = "http"
+        env["HERMES_GATEWAY"] = "ai"
 
-        python = str(PROJE_KOK / "venv" / "Scripts" / "python.exe")
         script = str(PROJE_KOK / "reymen" / "ag" / "telegram_bot.py")
 
-        log.info("[%s] Baslatiliyor... (token: ...%s)", self.ad, token[-6:])
+        log.info("[%s] Baslatiliyor... (python: %s, token: ...%s)", self.ad, PYTHON, token[-6:])
         self.process = subprocess.Popen(
-            [python, script],
+            [PYTHON, script],
             env=env,
             cwd=str(PROJE_KOK),
             stdout=subprocess.PIPE,
@@ -142,7 +136,7 @@ def supervisor():
     # Tum botlari baslat
     for y in yoneticiler:
         y.baslat()
-        time.sleep(1)  # Ard arda baslatma gecikmesi
+        time.sleep(1)
 
     log.info("=" * 50)
     log.info("3 bot baslatildi. Supervisor aktif.")
@@ -165,17 +159,26 @@ def supervisor():
 def main():
     if "--stop" in sys.argv:
         import subprocess as sp
-        sp.run(["taskkill", "/f", "/im", "python.exe", "/fi",
-                "WINDOWTITLE eq Pasa_38*"], capture_output=True)
-        sp.run(["taskkill", "/f", "/im", "python.exe", "/fi",
-                "WINDOWTITLE eq Kiral38*"], capture_output=True)
-        sp.run(["taskkill", "/f", "/im", "python.exe", "/fi",
-                "WINDOWTITLE eq ReYMeN_Bot*"], capture_output=True)
-        print("Botlar durduruldu.")
+        result = sp.run(
+            ["wmic", "process", "where", 'name="python.exe"',
+             "get", "ProcessId,CommandLine", "/format:csv"],
+            capture_output=True, text=True, timeout=10
+        )
+        killed = 0
+        for line in result.stdout.split("\n"):
+            if "telegram_bot.py" in line or "bot_supervisor" in line:
+                parts = line.split(",")
+                if len(parts) >= 2:
+                    pid = parts[1].strip()
+                    if pid.isdigit():
+                        sp.run(["taskkill", "/f", "/pid", pid],
+                               capture_output=True, timeout=5)
+                        killed += 1
+                        print(f"  PID {pid} olduruldu")
+        print(f"Toplam {killed} bot process'i durduruldu.")
         return
 
     if "--once" in sys.argv:
-        # Tek seferlik baslat (supervisor yok)
         for bot in BOTLAR:
             token = token_oku(bot["profil"])
             if not token:
@@ -184,16 +187,16 @@ def main():
             env = os.environ.copy()
             env["TELEGRAM_BOT_TOKEN"] = token
             env["HERMES_PROFILE"] = bot["profil"]
-            env["HERMES_GATEWAY"] = "http"
-            python = str(PROJE_KOK / "venv" / "Scripts" / "python.exe")
+            env["HERMES_GATEWAY"] = "ai"
             script = str(PROJE_KOK / "reymen" / "ag" / "telegram_bot.py")
             subprocess.Popen(
-                [python, script],
+                [PYTHON, script],
                 env=env, cwd=str(PROJE_KOK),
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+                stdout=open(PROJE_KOK / ".ReYMeN" / f"{bot['ad'].lower()}_bot.log", "w"),
+                stderr=subprocess.STDOUT,
+                creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NO_WINDOW,
             )
-            print(f"[{bot['ad']}] Baslatildi (arka planda).")
+            print(f"[{bot['ad']}] Baslatildi (arka planda). python: {PYTHON}")
             time.sleep(2)
         return
 

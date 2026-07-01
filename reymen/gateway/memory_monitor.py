@@ -67,7 +67,8 @@ def _get_rss_mb() -> Optional[int]:
             return int(maxrss / _BYTES_TO_MB)
         # Linux / other unices: KB
         return int(maxrss / 1024)
-    except Exception:
+    except Exception as _e:
+        logger.warning("[MemoryMonitor] except Exception (L70): %s", Exception)
         pass
 
     # Fallback: psutil (Windows, or unusual unix without resource).
@@ -207,7 +208,8 @@ def stop_memory_monitoring(timeout: float = 2.0) -> None:
         # Final snapshot before teardown so "last RSS" is always in the log.
         try:
             log_memory_usage(prefix="shutdown")
-        except Exception:
+        except Exception as _e:
+            logger.warning("[MemoryMonitor] except Exception (L210): %s", Exception)
             pass
 
         _stop_event.set()

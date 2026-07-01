@@ -101,6 +101,7 @@ def run_tool_execution_middleware(function_name, function_args, dispatch_fn,
                     task_id=task_id,
                     session_id=session_id,
                     user_task=user_task)
-    except Exception:
+    except Exception as _e:
+        logger.warning("[HermesUyum] except Exception (L104): %s", Exception)
         pass
     return dispatch_fn(function_name, function_args)

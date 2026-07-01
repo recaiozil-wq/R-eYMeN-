@@ -127,7 +127,8 @@ def resolve_cron_scheduler() -> "CronScheduler":
     try:
         from hermes_cli.config import cfg_get, load_config
         name = (cfg_get(load_config(), "cron", "provider", default="") or "").strip()
-    except Exception:
+    except Exception as _e:
+        logger.warning("[SchedulerProvider] except Exception (L130): %s", Exception)
         pass
 
     if not name or name in ("builtin", "in-process", "inprocess"):

@@ -79,3 +79,9 @@ logs/
 
 # Hermes (bağımsız çalışma için zorunlu değil)
 .hermes/
+*.yedek
+*.bin
+merkez_db/
+_baslat_*.py
+baslat_*.bat
+kill_bots.py

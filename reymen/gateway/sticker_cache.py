@@ -15,6 +15,9 @@ import time
 from typing import Optional
 
 from reymen.cron.hermes_stubs import get_hermes_home
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 CACHE_PATH = get_hermes_home() / "sticker_cache.json"
@@ -51,7 +54,8 @@ def _save_cache(cache: dict) -> None:
     except BaseException:
         try:
             os.unlink(tmp_path)
-        except OSError:
+        except OSError as _e:
+            logger.warning("[StickerCache] Dosya/klasor hatasi (L54): %s", OSError)
             pass
         raise
 

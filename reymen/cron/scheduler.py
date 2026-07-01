@@ -341,7 +341,8 @@ def _plugin_cron_env_var(platform_name: str) -> str:
         entry = platform_registry.get(platform_name.lower())
         if entry and entry.cron_deliver_env_var:
             return entry.cron_deliver_env_var
-    except Exception:
+    except Exception as _e:
+        logger.warning("[Scheduler] except Exception (L344): %s", Exception)
         pass
     return ""
 
@@ -425,7 +426,8 @@ def _iter_home_target_platforms():
         for entry in platform_registry.plugin_entries():
             if entry.cron_deliver_env_var and entry.name not in _HOME_TARGET_ENV_VARS:
                 yield entry.name
-    except Exception:
+    except Exception as _e:
+        logger.warning("[Scheduler] except Exception (L428): %s", Exception)
         pass
 
 
@@ -526,7 +528,8 @@ def _resolve_single_delivery_target(job: dict, deliver_value: str) -> Optional[d
                         thread_id = parsed_thread_id
                 else:
                     chat_id = resolved
-        except Exception:
+        except Exception as _e:
+            logger.warning("[Scheduler] except Exception (L529): %s", Exception)
             pass
 
         return {
@@ -731,7 +734,8 @@ def _deliver_result(job: dict, content: str, adapters=None, loop=None) -> Option
     try:
         user_cfg = load_config()
         wrap_response = user_cfg.get("cron", {}).get("wrap_response", True)
-    except Exception:
+    except Exception as _e:
+        logger.warning("[Scheduler] except Exception (L734): %s", Exception)
         pass
 
     if wrap_response:
@@ -1031,7 +1035,8 @@ def _run_job_script(script_path: str) -> tuple[bool, str]:
             from agent.redact import redact_sensitive_text
             stdout = redact_sensitive_text(stdout)
             stderr = redact_sensitive_text(stderr)
-        except Exception:
+        except Exception as _e:
+            logger.warning("[Scheduler] except Exception (L1034): %s", Exception)
             pass
 
         if result.returncode != 0:
@@ -1402,7 +1407,8 @@ def run_job(job: dict) -> tuple[bool, str, str, Optional[str]]:
             if _prior_cwd is not None:
                 try:
                     os.chdir(_prior_cwd)
-                except OSError:
+                except OSError as _e:
+                    logger.warning("[Scheduler] Dosya/klasor hatasi (L1405): %s", OSError)
                     pass
 
         now_iso = _hermes_now().strftime("%Y-%m-%d %H:%M:%S")
@@ -1640,7 +1646,8 @@ def run_job(job: dict) -> tuple[bool, str, str, Optional[str]]:
                 try:
                     from hermes_cli import managed_scope
                     _cfg = managed_scope.apply_managed_overlay(_cfg)
-                except Exception:
+                except Exception as _e:
+                    logger.warning("[Scheduler] except Exception (L1643): %s", Exception)
                     pass
                 _cfg = _expand_env_vars(_cfg)
                 _model_cfg = _cfg.get("model", {})
@@ -1658,7 +1665,8 @@ def run_job(job: dict) -> tuple[bool, str, str, Optional[str]]:
             _net_cfg = _cfg.get("network", {})
             if isinstance(_net_cfg, dict) and _net_cfg.get("force_ipv4"):
                 apply_ipv4_preference(force=True)
-        except Exception:
+        except Exception as _e:
+            logger.warning("[Scheduler] except Exception (L1661): %s", Exception)
             pass
 
         # Reasoning config from config.yaml
@@ -1859,7 +1867,8 @@ def run_job(job: dict) -> tuple[bool, str, str, Optional[str]]:
                         try:
                             _act = agent.get_activity_summary()
                             _idle_secs = _act.get("seconds_since_activity", 0.0)
-                        except Exception:
+                        except Exception as _e:
+                            logger.warning("[Scheduler] except Exception (L1862): %s", Exception)
                             pass
                     if _idle_secs >= _cron_inactivity_limit:
                         _inactivity_timeout = True
@@ -1876,7 +1885,8 @@ def run_job(job: dict) -> tuple[bool, str, str, Optional[str]]:
             if hasattr(agent, "get_activity_summary"):
                 try:
                     _activity = agent.get_activity_summary()
-                except Exception:
+                except Exception as _e:
+                    logger.warning("[Scheduler] except Exception (L1879): %s", Exception)
                     pass
             _last_desc = _activity.get("last_activity_desc", "unknown")
             _secs_ago = _activity.get("seconds_since_activity", 0)
@@ -2293,12 +2303,14 @@ def tick(verbose: bool = True, adapters=None, loop=None, sync: bool = True) -> i
         if fcntl:
             try:
                 fcntl.flock(lock_fd, fcntl.LOCK_UN)
-            except (OSError, IOError):
+            except (OSError, IOError) as _e:
+                logger.warning("[Scheduler] Dosya/klasor hatasi (L2296): %s", OSError)
                 pass
         elif msvcrt:
             try:
                 msvcrt.locking(lock_fd.fileno(), msvcrt.LK_UNLCK, 1)
-            except (OSError, IOError):
+            except (OSError, IOError) as _e:
+                logger.warning("[Scheduler] Dosya/klasor hatasi (L2301): %s", OSError)
                 pass
         lock_fd.close()
 

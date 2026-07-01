@@ -44,7 +44,17 @@
     "side_quest": "sub_agent'a yonlendir",
     "durum_oku_zorunlu": true,
     "kendi_bilgisiyle_cevap_yasak": true,
-    "kaynak": "durum.json TEK KAYNAK"
+    "kaynak": "durum.json TEK KAYNAK",
+    "reasoning_core_aktif": true
+  },
+  "reasoning_core": {
+    "durum": "entegre",
+    "merkezi_db": "analitik.db",
+    "tablo": "reasoning_log",
+    "provider_config": "config.yaml > fallback_providers > reasoning-core-*",
+    "model_local": "Ornith-1.0-9B (LM Studio)",
+    "model_openrouter": "deepreinforce-ai/ornith-1.0-397b",
+    "durum_oku_zorunlulugu": "evet"
   },
   "esit_mi": {
     "esit": true,

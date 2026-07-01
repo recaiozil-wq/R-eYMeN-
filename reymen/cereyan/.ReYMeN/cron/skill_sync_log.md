@@ -100,3 +100,19 @@
 - Guncellenen: 0
 - Hata: 0
 
+
+## Sync — 2026-07-01 18:55:35
+
+| Metrik | Deger |
+|--------|-------|
+| Yeni | 0 |
+| Guncellenen | 0 |
+| Hata | 0 |
+
+- Islem suresi: 1s
+- Toplam dosya: 1129
+- Meta kayit (oncesi): 8033
+- OnceHafiza kayit (oncesi): 1235
+- Yeni eklenen: 0
+- Guncellenen: 0
+- Hata: 0

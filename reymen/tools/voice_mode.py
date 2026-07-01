@@ -19,7 +19,8 @@ def check_voice_requirements() -> Dict[str, Any]:
     try:
         import speech_recognition  # noqa: F401
         result["microphone"] = True
-    except ImportError:
+    except ImportError as _e:
+        logger.warning("[VoiceMode] Modul yuklenemedi (L22): %s", ImportError)
         pass
     try:
         from reymen.arac.voice_engine import VoiceRegistry
@@ -30,7 +31,8 @@ def check_voice_requirements() -> Dict[str, Any]:
         try:
             import edge_tts  # noqa: F401
             result["tts_available"] = True
-        except ImportError:
+        except ImportError as _e:
+            logger.warning("[VoiceMode] Modul yuklenemedi (L33): %s", ImportError)
             pass
     return result
 

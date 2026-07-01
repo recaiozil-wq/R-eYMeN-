@@ -56,6 +56,23 @@ fallback_providers:
   base_url: http://127.0.0.1:1234/v1
   model: local-model
   provider: lmstudio
+- api_mode: chat_completions
+  # DİKKAT: mevcut 'lmstudio' girdisiyle AYNI portu (1234) kullanıyor.
+  # LM Studio tek sunucu örneğinde birden fazla model sekmesi
+  # açabildiği için bu genelde sorun değildir (istekteki "model" alanı
+  # hangi modelin kullanılacağını belirler); ama Reasoning-Core'u AYRI
+  # bir süreçte (vLLM/SGLang) çalıştıracaksan port çakışmasını önlemek
+  # için base_url'i http://127.0.0.1:1235/v1 gibi farklı bir porta çek.
+  base_url: http://127.0.0.1:1234/v1
+  model: Ornith-1.0-9B
+  provider: reasoning-core-local
+- api_mode: chat_completions
+  # OpenRouter'daki tam model kimliğini kullanmadan önce doğrula:
+  # https://openrouter.ai/models içinde "ornith" / "deepreinforce" ara.
+  # Model 2026-06-25'te çıktı, kimlik henüz burada teyit edilemedi.
+  base_url: https://openrouter.ai/api/v1
+  model: deepreinforce-ai/ornith-1.0-397b
+  provider: reasoning-core-openrouter
 gateway:
   strict: false
 max_concurrent_sessions: null

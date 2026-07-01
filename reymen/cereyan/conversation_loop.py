@@ -288,6 +288,13 @@ except ImportError:
 
 _MCP_AKTIF = _MCP_NATIVE_AKTIF or _MCP_CLIENT_AKTIF or _MCP_CATALOG_AKTIF or _MCP_TOOL_AKTIF
 
+# ── Reasoning-Core (akil yurutme motoru) ──────────────────────────────
+try:
+    from reymen.sistem.ortak_komut import reasoning_loop as _reasoning_loop
+    _REASONING_AKTIF = True
+except ImportError:
+    _reasoning_loop = None
+    _REASONING_AKTIF = False
 
 # ── Sabitler ──────────────────────────────────────────────────────────
 
@@ -784,6 +791,7 @@ class ConversationLoop:
             if api_yanit is None:
                 sonuc["hata"] = f"API cagrisi basarisiz (tur {api_call_count})"
                 log.warning("[%s] %s", task_id, sonuc["hata"])
+                self._hata_cozumle(sonuc["hata"], kaynak="api_call")
                 budget.tur_bitir(basarili=False)
                 break
 
@@ -837,6 +845,7 @@ class ConversationLoop:
 
             else:
                 sonuc["hata"] = f"Bos yanit (tur {api_call_count})"
+                self._hata_cozumle(sonuc["hata"], kaynak="bos_yanit")
                 budget.tur_bitir(basarili=False)
                 break
 
@@ -1521,6 +1530,38 @@ class ConversationLoop:
                 return {"tur": self.tur, "max_tur": self.max_tur}
 
         return _SimpleBudget(self.max_tur)
+
+    def _hata_cozumle(self, hata_metni: str, kaynak: str = "genel") -> None:
+        """Hata aninda Reasoning-Core'u tetikle.
+        
+        conversation_loop icinden cagrilir: API hatasi, bos yanit, tool hatasi.
+        reasoning_loop yoksa / calismazsa sessizce gec (ana akis bozulmasin).
+        """
+        if not _REASONING_AKTIF or _reasoning_loop is None:
+            return
+        try:
+            # DURUM_OKU icin ortak_komut.guncelle() ciktisini kullan
+            from reymen.sistem.ortak_komut import guncelle as _ortak_guncelle
+            durum = _ortak_guncelle()
+            durum_ozeti = str(durum)[:2000]
+            
+            # fallback_providers'i config.yaml'dan oku
+            import yaml as _yaml
+            cfg_yol = Path(__file__).parent.parent.parent / "config.yaml"
+            if cfg_yol.exists():
+                cfg = _yaml.safe_load(cfg_yol.read_text(encoding="utf-8"))
+                fallback = cfg.get("fallback_providers", [])
+            else:
+                fallback = []
+            
+            _reasoning_loop(
+                hata_metni=hata_metni,
+                durum_ozeti=durum_ozeti,
+                bot_adi="reymen_agent",
+                fallback_providers=fallback,
+            )
+        except Exception as _rh:
+            log.debug("[Reasoning-Core] Atlandi: %s", _rh)
 
     def _sistem_promptu_olustur(self, hedef: str, baglam: Optional[dict] = None) -> str:
         """PromptBuilder ile sistem promptu insa et."""
@@ -2215,6 +2256,7 @@ class ConversationLoop:
             try:
                 return self.motor.arac_calistir(arac, **parametreler)
             except Exception as e:
+                self._hata_cozumle(f"Tool hatasi ({arac}): {e}", kaynak="tool")
                 return {"basarili": False, "hata": str(e)}
 
         # Direkt tool modulu cagir

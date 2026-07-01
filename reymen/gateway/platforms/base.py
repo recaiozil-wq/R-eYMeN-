@@ -199,8 +199,9 @@ def is_network_accessible(host: str) -> bool:
         if getattr(addr, "ipv4_mapped", None) and addr.ipv4_mapped.is_loopback:
             return False
         return True
-    except ValueError:
+    except ValueError as _e:
         # when host variable is a hostname, we should try to resolve below
+        logger.warning("[Base] Gecersiz deger (L202): %s", ValueError)
         pass
 
     try:
@@ -303,7 +304,8 @@ def _no_proxy_entry_matches(entry: str, host: str, port: int | None = None) -> b
             return ipaddress.ip_address(host) in network
         except ValueError:
             return False
-    except ValueError:
+    except ValueError as _e:
+        logger.warning("[Base] Gecersiz deger (L306): %s", ValueError)
         pass
 
     try:
@@ -312,7 +314,8 @@ def _no_proxy_entry_matches(entry: str, host: str, port: int | None = None) -> b
             return ipaddress.ip_address(host) == token_ip
         except ValueError:
             return False
-    except ValueError:
+    except ValueError as _e:
+        logger.warning("[Base] Gecersiz deger (L315): %s", ValueError)
         pass
 
     if token_host.startswith("*."):
@@ -694,7 +697,8 @@ def cleanup_image_cache(max_age_hours: int = 24) -> int:
             try:
                 f.unlink()
                 removed += 1
-            except OSError:
+            except OSError as _e:
+                logger.warning("[Base] Dosya/klasor hatasi (L697): %s", OSError)
                 pass
     return removed
 
@@ -937,7 +941,8 @@ def _media_delivery_recency_seconds() -> float:
         if custom:
             seconds = float(custom)
             return max(0.0, seconds)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError) as _e:
+        logger.warning("[Base] Gecersiz deger (L940): %s", TypeError)
         pass
     return float(_MEDIA_DELIVERY_TRUST_RECENT_DEFAULT_SECONDS)
 
@@ -1292,7 +1297,8 @@ def cleanup_document_cache(max_age_hours: int = 24) -> int:
             try:
                 f.unlink()
                 removed += 1
-            except OSError:
+            except OSError as _e:
+                logger.warning("[Base] Dosya/klasor hatasi (L1295): %s", OSError)
                 pass
     return removed
 
@@ -3177,9 +3183,10 @@ class BasePlatformAdapter(ABC):
                             self.send_typing(chat_id, metadata=metadata),
                             timeout=_send_typing_timeout,
                         )
-                    except asyncio.TimeoutError:
+                    except asyncio.TimeoutError as _e:
                         # Slow network — abandon this tick, keep the loop
                         # on schedule so the next send_typing fires fresh.
+                        logger.warning("[Base] except asyncio.TimeoutError (L3180): %s", asyncio.TimeoutError)
                         pass
                     except asyncio.CancelledError:
                         raise
@@ -3204,7 +3211,7 @@ class BasePlatformAdapter(ABC):
                     await asyncio.sleep(min(0.25, remaining))
                 if stop_event.is_set():
                     return
-        except asyncio.CancelledError:
+        except asyncio.CancelledError as _e:
             pass  # Normal cancellation when handler completes
         finally:
             # Ensure the underlying platform typing loop is stopped.
@@ -3214,7 +3221,8 @@ class BasePlatformAdapter(ABC):
             if hasattr(self, "stop_typing"):
                 try:
                     await self.stop_typing(chat_id)
-                except Exception:
+                except Exception as _e:
+                    logger.warning("[Base] except Exception (L3217): %s", Exception)
                     pass
             self._typing_paused.discard(chat_id)
 
@@ -3233,9 +3241,10 @@ class BasePlatformAdapter(ABC):
                 typing_task.cancel()
                 try:
                     await asyncio.wait_for(asyncio.shield(typing_task), timeout=timeout)
-                except (asyncio.CancelledError, asyncio.TimeoutError):
+                except (asyncio.CancelledError, asyncio.TimeoutError) as _e:
                     # The task is cancelled; don't let a slow adapter-specific
                     # cleanup block response delivery or shutdown.
+                    logger.warning("[Base] except (asyncio.CancelledError, asyncio.TimeoutError) (L3236): %s", asyncio.CancelledError)
                     pass
             if not hasattr(self, "stop_typing"):
                 return
@@ -3243,7 +3252,8 @@ class BasePlatformAdapter(ABC):
             for attempt in range(attempts):
                 try:
                     await self.stop_typing(chat_id)
-                except Exception:
+                except Exception as _e:
+                    logger.warning("[Base] except Exception (L3246): %s", Exception)
                     pass
                 if attempt < attempts - 1:
                     await asyncio.sleep(0)
@@ -3270,7 +3280,8 @@ class BasePlatformAdapter(ABC):
                 interrupt_event.set()
         try:
             await self.stop_typing(chat_id)
-        except Exception:
+        except Exception as _e:
+            logger.warning("[Base] except Exception (L3273): %s", Exception)
             pass
 
     def register_post_delivery_callback(
@@ -4328,7 +4339,8 @@ class BasePlatformAdapter(ABC):
                     finally:
                         try:
                             os.remove(_tts_path)
-                        except OSError:
+                        except OSError as _e:
+                            logger.warning("[Base] Dosya/klasor hatasi (L4331): %s", OSError)
                             pass
 
                 # Send the text portion
@@ -4527,8 +4539,9 @@ class BasePlatformAdapter(ABC):
                 try:
                     self._background_tasks.add(drain_task)
                     drain_task.add_done_callback(self._background_tasks.discard)
-                except TypeError:
+                except TypeError as _e:
                     # Tests stub create_task() with non-hashable sentinels; tolerate.
+                    logger.warning("[Base] Tip hatasi (L4530): %s", TypeError)
                     pass
                 return  # Drain task owns the session now.
                 
@@ -4556,7 +4569,7 @@ class BasePlatformAdapter(ABC):
                     ),
                     metadata=_thread_metadata,
                 )
-            except Exception:
+            except Exception as _e:
                 pass  # Last resort — don't let error reporting crash the handler
         finally:
             # Stop typing before any deferred callback work.  Post-delivery
@@ -4594,7 +4607,8 @@ class BasePlatformAdapter(ABC):
                             _post_result,
                             timeout=_POST_DELIVERY_CALLBACK_TIMEOUT_SECONDS,
                         )
-                except (asyncio.TimeoutError, Exception):
+                except (asyncio.TimeoutError, Exception) as _e:
+                    logger.warning("[Base] except (asyncio.TimeoutError, Exception) (L4597): %s", asyncio.TimeoutError)
                     pass
             # Some adapters keep platform-level typing tasks.  If callback
             # work or a late refresh recreated one, make one final bounded stop
@@ -4648,8 +4662,9 @@ class BasePlatformAdapter(ABC):
                     try:
                         self._background_tasks.add(drain_task)
                         drain_task.add_done_callback(self._background_tasks.discard)
-                    except TypeError:
+                    except TypeError as _e:
                         # Tests stub create_task() with non-hashable sentinels; tolerate.
+                        logger.warning("[Base] Tip hatasi (L4651): %s", TypeError)
                         pass
                 # Leave _active_sessions[session_key] populated — the drain
                 # task's own lifecycle will clean it up.

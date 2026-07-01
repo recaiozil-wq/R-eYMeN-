@@ -265,7 +265,8 @@ def build_session_context_prompt(
             entry = platform_registry.get(context.source.platform.value)
             if entry and entry.pii_safe:
                 _is_pii_safe = True
-        except Exception:
+        except Exception as _e:
+            logger.warning("[Session] except Exception (L268): %s", Exception)
             pass
     redact_pii = redact_pii and _is_pii_safe
     lines = [
@@ -934,7 +935,7 @@ class SessionStore:
         if self._db:
             try:
                 return self._db.session_count() > 1
-            except Exception:
+            except Exception as _e:
                 pass  # fall through to heuristic
         # Fallback: check if sessions.json was loaded with existing data.
         # This covers the rare case where the DB is unavailable.

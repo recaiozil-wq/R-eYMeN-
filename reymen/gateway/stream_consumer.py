@@ -267,7 +267,8 @@ class GatewayStreamConsumer:
                     for param in params.values()
                 ):
                     kwargs["metadata"] = self.metadata
-            except (TypeError, ValueError):
+            except (TypeError, ValueError) as _e:
+                logger.warning("[StreamConsumer] Gecersiz deger (L270): %s", TypeError)
                 pass
         return await self.adapter.edit_message(**kwargs)
 
@@ -734,7 +735,8 @@ class GatewayStreamConsumer:
                             self._accumulated, finalize=True, is_turn_final=False,
                         )
                     )
-                except Exception:
+                except Exception as _e:
+                    logger.warning("[StreamConsumer] except Exception (L737): %s", Exception)
                     pass
             # Only confirm final delivery if the best-effort send above
             # actually succeeded OR if the final response was already
@@ -888,7 +890,8 @@ class GatewayStreamConsumer:
                         )
                         if result.success:
                             self._last_sent_text = clean_text
-                    except Exception:
+                    except Exception as _e:
+                        logger.warning("[StreamConsumer] except Exception (L891): %s", Exception)
                         pass
                 self._already_sent = True
                 self._final_response_sent = True
@@ -1127,7 +1130,7 @@ class GatewayStreamConsumer:
                 content=prefix,
             )
             self._last_sent_text = prefix
-        except Exception:
+        except Exception as _e:
             pass  # best-effort — don't let this block the fallback path
 
     async def _send_commentary(self, text: str) -> bool:

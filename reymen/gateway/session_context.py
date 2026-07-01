@@ -38,6 +38,9 @@ needs to replace the import + call site:
 
 from contextvars import ContextVar
 from typing import Any
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Sentinel to distinguish "never set in this context" from "explicitly set to empty".
 # When a contextvar holds _UNSET, we fall back to os.environ (CLI/cron compat).
@@ -135,7 +138,8 @@ def set_session_vars(
         from reymen.cron.hermes_stubs import set_session_cwd
 
         set_session_cwd(cwd)
-    except Exception:
+    except Exception as _e:
+        logger.warning("[SessionContext] except Exception (L138): %s", Exception)
         pass
     return tokens
 
@@ -167,7 +171,8 @@ def clear_session_vars(tokens: list) -> None:
         from reymen.cron.hermes_stubs import clear_session_cwd
 
         clear_session_cwd()
-    except Exception:
+    except Exception as _e:
+        logger.warning("[SessionContext] except Exception (L170): %s", Exception)
         pass
 
 

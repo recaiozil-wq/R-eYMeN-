@@ -101,13 +101,15 @@ class GatewaySlashCommandsMixin:
         try:
             from reymen.cron.hermes_stubs.env_passthrough import clear_env_passthrough
             clear_env_passthrough()
-        except Exception:
+        except Exception as _e:
+            logger.warning("[SlashCommands] except Exception (L104): %s", Exception)
             pass
 
         try:
             from reymen.cron.hermes_stubs.credential_files import clear_credential_files
             clear_credential_files()
-        except Exception:
+        except Exception as _e:
+            logger.warning("[SlashCommands] except Exception (L110): %s", Exception)
             pass
 
         # Reset the session
@@ -138,7 +140,8 @@ class GatewaySlashCommandsMixin:
                 old_session_id=_old_sid,
                 new_session_id=new_entry.session_id if new_entry else None,
             )
-        except Exception:
+        except Exception as _e:
+            logger.warning("[SlashCommands] except Exception (L141): %s", Exception)
             pass
 
         # Emit session:end hook (session is ending)
@@ -184,7 +187,8 @@ class GatewaySlashCommandsMixin:
                     header = t("gateway.reset.header_titled", title=sanitized)
                 except ValueError as e:
                     _title_note = t("gateway.reset.title_error_untitled", error=str(e))
-                except Exception:
+                except Exception as _e:
+                    logger.warning("[SlashCommands] except Exception (L187): %s", Exception)
                     pass
             elif not _title_note:
                 # sanitize_title returned empty (whitespace-only / unprintable)
@@ -214,7 +218,8 @@ class GatewaySlashCommandsMixin:
                 old_session_id=_old_sid,
                 new_session_id=_new_sid,
             )
-        except Exception:
+        except Exception as _e:
+            logger.warning("[SlashCommands] except Exception (L217): %s", Exception)
             pass
 
         # Append a random tip to the reset message
@@ -966,7 +971,8 @@ class GatewaySlashCommandsMixin:
                     lines.append(f"`{cmd}` — {skill_cmds[cmd]['description']}")
                 if len(sorted_cmds) > 10:
                     lines.append(t("gateway.help.more_use_commands", count=len(sorted_cmds) - 10))
-        except Exception:
+        except Exception as _e:
+            logger.warning("[SlashCommands] except Exception (L969): %s", Exception)
             pass
         return _telegramize_command_mentions(
             "\n".join(lines),
@@ -997,7 +1003,8 @@ class GatewaySlashCommandsMixin:
                 for cmd in sorted(skill_cmds):
                     desc = skill_cmds[cmd].get("description", "").strip() or t("gateway.commands.default_desc")
                     entries.append(f"`{cmd}` — {desc}")
-        except Exception:
+        except Exception as _e:
+            logger.warning("[SlashCommands] except Exception (L1000): %s", Exception)
             pass
 
         if not entries:
@@ -1067,7 +1074,8 @@ class GatewaySlashCommandsMixin:
             try:
                 from reymen.cron.hermes_stubs.models import clear_provider_models_cache
                 clear_provider_models_cache()
-            except Exception:
+            except Exception as _e:
+                logger.warning("[SlashCommands] except Exception (L1070): %s", Exception)
                 pass
 
         # Read current model/provider from config
@@ -1092,7 +1100,8 @@ class GatewaySlashCommandsMixin:
                     custom_provs = get_compatible_custom_providers(cfg)
                 except Exception:
                     custom_provs = cfg.get("custom_providers")
-        except Exception:
+        except Exception as _e:
+            logger.warning("[SlashCommands] except Exception (L1095): %s", Exception)
             pass
 
         # Check for session override
@@ -1230,7 +1239,8 @@ class GatewaySlashCommandsMixin:
                                 _sw_raw = _sw_model_cfg.get("context_length")
                                 if _sw_raw is not None:
                                     _sw_config_ctx = int(_sw_raw)
-                        except Exception:
+                        except Exception as _e:
+                            logger.warning("[SlashCommands] except Exception (L1233): %s", Exception)
                             pass
                         ctx = resolve_display_context_length(
                             result.new_model,
@@ -1288,7 +1298,8 @@ class GatewaySlashCommandsMixin:
                     elif p.get("api_url"):
                         lines.append(f"  `{p['api_url']}`")
                     lines.append("")
-            except Exception:
+            except Exception as _e:
+                logger.warning("[SlashCommands] except Exception (L1291): %s", Exception)
                 pass
 
             lines.append(t("gateway.model.usage_switch_model"))
@@ -1420,7 +1431,8 @@ class GatewaySlashCommandsMixin:
                     _sw2_raw = _sw2_model_cfg.get("context_length")
                     if _sw2_raw is not None:
                         _sw2_config_ctx = int(_sw2_raw)
-            except Exception:
+            except Exception as _e:
+                logger.warning("[SlashCommands] except Exception (L1423): %s", Exception)
                 pass
             ctx = resolve_display_context_length(
                 result.new_model,
@@ -1968,7 +1980,8 @@ class GatewaySlashCommandsMixin:
                 cp_cfg = _data.get("checkpoints", {})
                 if isinstance(cp_cfg, bool):
                     cp_cfg = {"enabled": cp_cfg}
-        except Exception:
+        except Exception as _e:
+            logger.warning("[SlashCommands] except Exception (L1971): %s", Exception)
             pass
 
         if not cp_cfg.get("enabled", False):
@@ -2788,7 +2801,7 @@ class GatewaySlashCommandsMixin:
                     source=source.platform.value if source.platform else "unknown",
                     user_id=source.user_id,
                 )
-            except Exception:
+            except Exception as _e:
                 pass  # Session might already exist, ignore errors
 
         title_arg = event.get_command_args().strip()
@@ -3090,13 +3103,14 @@ class GatewaySlashCommandsMixin:
                     codex_reasoning_items=msg.get("codex_reasoning_items"),
                     codex_message_items=msg.get("codex_message_items"),
                 )
-            except Exception:
+            except Exception as _e:
                 pass  # Best-effort copy
 
         # Set title
         try:
             self._session_db.set_session_title(new_session_id, branch_title)
-        except Exception:
+        except Exception as _e:
+            logger.warning("[SlashCommands] except Exception (L3099): %s", Exception)
             pass
 
         # Switch the session store entry to the new session
@@ -3262,7 +3276,8 @@ class GatewaySlashCommandsMixin:
                     lines.append(t("gateway.usage.label_cost", prefix=prefix, amount=f"{float(cost_result.amount_usd):.4f}"))
                 elif cost_result.status == "included":
                     lines.append(t("gateway.usage.label_cost_included"))
-            except Exception:
+            except Exception as _e:
+                logger.warning("[SlashCommands] except Exception (L3265): %s", Exception)
                 pass
 
             # Context window and compressions

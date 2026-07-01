@@ -34,7 +34,8 @@ def vision_analyze_tool(
                     "image_size": len(data),
                     "note": "Vision analysis not available (araclar_goruntu not found)",
                 })
-        except Exception:
+        except Exception as _e:
+            logger.warning("[VisionTools] except Exception (L37): %s", Exception)
             pass
         return json.dumps({
             "success": False,

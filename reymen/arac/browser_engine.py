@@ -76,7 +76,8 @@ class SekmeYoneticisi:
         try:
             if self._aktif_sekme and not self._aktif_sekme.is_closed():
                 return self._aktif_sekme.url
-        except Exception:
+        except Exception as _e:
+            logger.warning("[BrowserEngine] except Exception (L79): %s", Exception)
             pass
         return ""
 
@@ -89,7 +90,8 @@ class SekmeYoneticisi:
         try:
             if self._aktif_sekme and not self._aktif_sekme.is_closed():
                 return self._aktif_sekme
-        except Exception:
+        except Exception as _e:
+            logger.warning("[BrowserEngine] except Exception (L92): %s", Exception)
             pass
 
         # Kapali/yok → yeni sekme aç

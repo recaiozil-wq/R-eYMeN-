@@ -10,6 +10,9 @@ from __future__ import annotations
 import re
 from datetime import datetime
 from typing import Any, Optional, Tuple
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 # Current gateway format: [Tue 2026-04-28 13:40:53 CEST]
@@ -54,7 +57,8 @@ def coerce_message_timestamp(ts_value: Any, tz=None) -> Optional[float]:
             return parsed
         try:
             return float(text)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError) as _e:
+            logger.warning("[MessageTimestamps] Gecersiz deger (L57): %s", TypeError)
             pass
         try:
             dt = datetime.fromisoformat(text)

@@ -25,6 +25,9 @@ import sys
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 _SIGNAL_NAME_BY_NUM: Dict[int, str] = {}
@@ -52,7 +55,8 @@ def _read_proc_field(pid: int, key: str) -> Optional[str]:
             for line in fh:
                 if line.startswith(key + ":"):
                     return line.split(":", 1)[1].strip()
-    except (FileNotFoundError, PermissionError, OSError):
+    except (FileNotFoundError, PermissionError, OSError) as _e:
+        logger.warning("[ShutdownForensics] Dosya/klasor hatasi (L55): %s", FileNotFoundError)
         pass
     return None
 
@@ -88,7 +92,8 @@ def _proc_summary(pid: int) -> Dict[str, Any]:
     if ppid is not None:
         try:
             summary["ppid"] = int(ppid)
-        except ValueError:
+        except ValueError as _e:
+            logger.warning("[ShutdownForensics] Gecersiz deger (L91): %s", ValueError)
             pass
     uid = _read_proc_field(pid, "Uid")
     if uid is not None:
@@ -146,7 +151,8 @@ def snapshot_shutdown_context(received_signal: Any = None) -> Dict[str, Any]:
     # crushing the box" rather than "external killer".
     try:
         ctx["loadavg_1m"] = os.getloadavg()[0]
-    except (OSError, AttributeError):
+    except (OSError, AttributeError) as _e:
+        logger.warning("[ShutdownForensics] Dosya/klasor hatasi (L149): %s", OSError)
         pass
 
     # /proc/self/status TracerPid: nonzero means a debugger / strace is
@@ -157,7 +163,8 @@ def snapshot_shutdown_context(received_signal: Any = None) -> Dict[str, Any]:
         if tracer is not None and tracer != "0":
             ctx["tracer_pid"] = int(tracer) if tracer.isdigit() else tracer
             ctx["tracer"] = _proc_summary(int(tracer)) if tracer.isdigit() else None
-    except (TypeError, ValueError):
+    except (TypeError, ValueError) as _e:
+        logger.warning("[ShutdownForensics] Gecersiz deger (L160): %s", TypeError)
         pass
 
     # Race-detection hint: did somebody recently start a sibling gateway
@@ -179,16 +186,19 @@ def snapshot_shutdown_context(received_signal: Any = None) -> Dict[str, Any]:
                         f'"target_pid": {pid}' in raw
                         or f"'target_pid': {pid}" in raw
                     )
-                except OSError:
+                except OSError as _e:
+                    logger.warning("[ShutdownForensics] Dosya/klasor hatasi (L182): %s", OSError)
                     pass
             planned_stop_path = Path(hermes_home_str) / ".gateway-planned-stop.json"
             if planned_stop_path.exists():
                 try:
                     raw = planned_stop_path.read_text(encoding="utf-8")
                     ctx["planned_stop_marker"] = raw[:300]
-                except OSError:
+                except OSError as _e:
+                    logger.warning("[ShutdownForensics] Dosya/klasor hatasi (L189): %s", OSError)
                     pass
-    except Exception:  # noqa: BLE001 — never raise from a signal handler
+    except Exception:  # noqa as _e:
+        logger.warning("[ShutdownForensics] except Exception (L191): %s", Exception)
         pass
 
     return ctx
@@ -265,14 +275,16 @@ def spawn_async_diagnostic(
     except (FileNotFoundError, OSError):
         try:
             os.close(fd)
-        except OSError:
+        except OSError as _e:
+            logger.warning("[ShutdownForensics] Dosya/klasor hatasi (L268): %s", OSError)
             pass
         return None
     finally:
         # Subprocess inherited the fd; we can drop our handle.
         try:
             os.close(fd)
-        except OSError:
+        except OSError as _e:
+            logger.warning("[ShutdownForensics] Dosya/klasor hatasi (L275): %s", OSError)
             pass
 
     return proc.pid
@@ -355,7 +367,8 @@ def check_systemd_timing_alignment(drain_timeout: float) -> Optional[Dict[str, A
                             break
                     if unit_name:
                         break
-    except (OSError, FileNotFoundError):
+    except (OSError, FileNotFoundError) as _e:
+        logger.warning("[ShutdownForensics] Dosya/klasor hatasi (L358): %s", OSError)
         pass
     if not unit_name:
         return None

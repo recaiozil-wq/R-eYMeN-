@@ -237,7 +237,8 @@ class ThreadParticipationTracker:
                 data = json.loads(path.read_text(encoding="utf-8"))
                 if isinstance(data, list):
                     return [str(thread_id) for thread_id in data]
-            except Exception:
+            except Exception as _e:
+                logger.warning("[Helpers] except Exception (L240): %s", Exception)
                 pass
         return []
 

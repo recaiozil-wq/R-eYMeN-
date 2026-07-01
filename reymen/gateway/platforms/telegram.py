@@ -831,7 +831,8 @@ class TelegramAdapter(BasePlatformAdapter):
             from telegram.error import NetworkError, TimedOut
             if isinstance(error, (NetworkError, TimedOut)):
                 return True
-        except ImportError:
+        except ImportError as _e:
+            logger.warning("[Telegram] Modul yuklenemedi (L834): %s", ImportError)
             pass
         return isinstance(error, OSError)
 
@@ -1244,7 +1245,8 @@ class TelegramAdapter(BasePlatformAdapter):
             try:
                 from reymen.gateway import rich_sent_store
                 rich_sent_store.record(str(chat_id), str(message_id), content)
-            except Exception:
+            except Exception as _e:
+                logger.warning("[Telegram] except Exception (L1247): %s", Exception)
                 pass
         return SendResult(
             success=True,
@@ -1454,7 +1456,8 @@ class TelegramAdapter(BasePlatformAdapter):
         try:
             if self._app and self._app.updater and self._app.updater.running:
                 await self._app.updater.stop()
-        except Exception:
+        except Exception as _e:
+            logger.warning("[Telegram] except Exception (L1457): %s", Exception)
             pass
 
         await self._drain_polling_connections()
@@ -1580,7 +1583,8 @@ class TelegramAdapter(BasePlatformAdapter):
             try:
                 if self._app and self._app.updater and self._app.updater.running:
                     await self._app.updater.stop()
-            except Exception:
+            except Exception as _e:
+                logger.warning("[Telegram] except Exception (L1583): %s", Exception)
                 pass
 
             await asyncio.sleep(RETRY_DELAY)
@@ -2347,7 +2351,7 @@ class TelegramAdapter(BasePlatformAdapter):
                         # Re-trigger typing like the legacy success path does.
                         try:
                             await self.send_typing(chat_id, metadata=metadata)
-                        except Exception:
+                        except Exception as _e:
                             pass  # Typing failures are non-fatal
                     return rich_result
 
@@ -2573,7 +2577,7 @@ class TelegramAdapter(BasePlatformAdapter):
             # messages like "Checking:" before running tools).
             try:
                 await self.send_typing(chat_id, metadata=metadata)
-            except Exception:
+            except Exception as _e:
                 pass  # Typing failures are non-fatal
 
             return SendResult(
@@ -3700,7 +3704,8 @@ class TelegramAdapter(BasePlatformAdapter):
                         parse_mode=None,
                         reply_markup=None,
                     )
-                except Exception:
+                except Exception as _e:
+                    logger.warning("[Telegram] except Exception (L3703): %s", Exception)
                     pass
             await query.answer(
                 text="Switch failed." if switch_failed else "Model switched!"
@@ -3781,7 +3786,8 @@ class TelegramAdapter(BasePlatformAdapter):
                         parse_mode=None,
                         reply_markup=None,
                     )
-                except Exception:
+                except Exception as _e:
+                    logger.warning("[Telegram] except Exception (L3784): %s", Exception)
                     pass
             await query.answer(
                 text="Switch failed." if switch_failed else "Model switched!"
@@ -3951,7 +3957,7 @@ class TelegramAdapter(BasePlatformAdapter):
                         parse_mode=ParseMode.MARKDOWN_V2,
                         reply_markup=None,
                     )
-                except Exception:
+                except Exception as _e:
                     pass  # non-fatal if edit fails
 
                 # Resolve the approval — unblocks the agent thread
@@ -4014,7 +4020,8 @@ class TelegramAdapter(BasePlatformAdapter):
                         parse_mode=ParseMode.MARKDOWN_V2,
                         reply_markup=None,
                     )
-                except Exception:
+                except Exception as _e:
+                    logger.warning("[Telegram] except Exception (L4017): %s", Exception)
                     pass
 
                 # Resolve via the module-level primitive.  The runner stored
@@ -4120,7 +4127,8 @@ class TelegramAdapter(BasePlatformAdapter):
                             parse_mode=ParseMode.HTML,
                             reply_markup=None,
                         )
-                    except Exception:
+                    except Exception as _e:
+                        logger.warning("[Telegram] except Exception (L4123): %s", Exception)
                         pass
                     return
 
@@ -4203,7 +4211,7 @@ class TelegramAdapter(BasePlatformAdapter):
                 parse_mode=ParseMode.MARKDOWN_V2,
                 reply_markup=None,
             )
-        except Exception:
+        except Exception as _e:
             pass  # non-fatal if edit fails
         # Write the response file
         try:
@@ -4329,7 +4337,8 @@ class TelegramAdapter(BasePlatformAdapter):
             else:
                 # Per-email one-shot: strip keyboard so the action can't fire twice.
                 await query.edit_message_text(text=appended, reply_markup=None)
-        except Exception:
+        except Exception as _e:
+            logger.warning("[Telegram] except Exception (L4332): %s", Exception)
             pass
 
     def _missing_media_path_error(self, label: str, path: str) -> str:
@@ -4566,7 +4575,8 @@ class TelegramAdapter(BasePlatformAdapter):
                     for fh in opened_files:
                         try:
                             fh.seek(0)
-                        except Exception:
+                        except Exception as _e:
+                            logger.warning("[Telegram] except Exception (L4569): %s", Exception)
                             pass
 
                 await self._send_with_dm_topic_reply_anchor_retry(
@@ -4597,7 +4607,8 @@ class TelegramAdapter(BasePlatformAdapter):
                 for fh in opened_files:
                     try:
                         fh.close()
-                    except Exception:
+                    except Exception as _e:
+                        logger.warning("[Telegram] except Exception (L4600): %s", Exception)
                         pass
 
     async def send_image_file(

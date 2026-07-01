@@ -205,7 +205,8 @@ class Platform(Enum):
                 cls._value2member_map_[value] = pseudo
                 cls._member_map_[pseudo._name_] = pseudo
                 return pseudo
-        except Exception:
+        except Exception as _e:
+            logger.warning("[Config] except Exception (L208): %s", Exception)
             pass
 
         return None
@@ -227,7 +228,8 @@ class Platform(Enum):
                         )
                     ):
                         names.add(child.name.lower())
-        except Exception:
+        except Exception as _e:
+            logger.warning("[Config] except Exception (L230): %s", Exception)
             pass
         return names
 
@@ -604,7 +606,7 @@ class GatewayConfig:
                 if entry.validate_config is not None:
                     return entry.validate_config(config)
                 return True
-        except Exception:
+        except Exception as _e:
             pass  # Registry not yet initialised during early import
 
         return False
@@ -670,7 +672,7 @@ class GatewayConfig:
             try:
                 platform = Platform(platform_name)
                 platforms[platform] = PlatformConfig.from_dict(platform_data)
-            except ValueError:
+            except ValueError as _e:
                 pass  # Skip unknown platforms
         
         reset_by_type = {}
@@ -682,7 +684,8 @@ class GatewayConfig:
             try:
                 platform = Platform(platform_name)
                 reset_by_platform[platform] = SessionResetPolicy.from_dict(policy_data)
-            except ValueError:
+            except ValueError as _e:
+                logger.warning("[Config] Gecersiz deger (L685): %s", ValueError)
                 pass
         
         default_policy = SessionResetPolicy()
@@ -1507,7 +1510,8 @@ def _apply_env_overrides(config: GatewayConfig) -> None:
         if wa_cloud_port:
             try:
                 config.platforms[Platform.WHATSAPP_CLOUD].extra["webhook_port"] = int(wa_cloud_port)
-            except ValueError:
+            except ValueError as _e:
+                logger.warning("[Config] Gecersiz deger (L1510): %s", ValueError)
                 pass
         wa_cloud_path = os.getenv("WHATSAPP_CLOUD_WEBHOOK_PATH")
         if wa_cloud_path:
@@ -1695,7 +1699,8 @@ def _apply_env_overrides(config: GatewayConfig) -> None:
         if api_server_port:
             try:
                 config.platforms[Platform.API_SERVER].extra["port"] = int(api_server_port)
-            except ValueError:
+            except ValueError as _e:
+                logger.warning("[Config] Gecersiz deger (L1698): %s", ValueError)
                 pass
         if api_server_host:
             config.platforms[Platform.API_SERVER].extra["host"] = api_server_host
@@ -1714,7 +1719,8 @@ def _apply_env_overrides(config: GatewayConfig) -> None:
         if webhook_port:
             try:
                 config.platforms[Platform.WEBHOOK].extra["port"] = int(webhook_port)
-            except ValueError:
+            except ValueError as _e:
+                logger.warning("[Config] Gecersiz deger (L1717): %s", ValueError)
                 pass
         if webhook_secret:
             config.platforms[Platform.WEBHOOK].extra["secret"] = webhook_secret
@@ -1748,7 +1754,8 @@ def _apply_env_overrides(config: GatewayConfig) -> None:
                 config.platforms[Platform.MSGRAPH_WEBHOOK].extra["port"] = int(
                     msgraph_webhook_port
                 )
-            except ValueError:
+            except ValueError as _e:
+                logger.warning("[Config] Gecersiz deger (L1751): %s", ValueError)
                 pass
         if msgraph_webhook_client_state:
             config.platforms[Platform.MSGRAPH_WEBHOOK].extra["client_state"] = (
@@ -2035,14 +2042,16 @@ def _apply_env_overrides(config: GatewayConfig) -> None:
     if idle_minutes:
         try:
             config.default_reset_policy.idle_minutes = int(idle_minutes)
-        except ValueError:
+        except ValueError as _e:
+            logger.warning("[Config] Gecersiz deger (L2038): %s", ValueError)
             pass
     
     reset_hour = os.getenv("SESSION_RESET_HOUR")
     if reset_hour:
         try:
             config.default_reset_policy.at_hour = int(reset_hour)
-        except ValueError:
+        except ValueError as _e:
+            logger.warning("[Config] Gecersiz deger (L2045): %s", ValueError)
             pass
 
     # Registry-driven enable for plugin platforms.  Built-ins have explicit

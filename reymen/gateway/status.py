@@ -23,6 +23,9 @@ from pathlib import Path
 from reymen.cron.hermes_stubs import get_hermes_home
 from typing import Any, Optional
 from reymen.cron.hermes_stubs import atomic_json_write
+import logging
+
+logger = logging.getLogger(__name__)
 
 if sys.platform == "win32":
     import msvcrt
@@ -134,7 +137,8 @@ def _read_process_cmdline(pid: int) -> Optional[str]:
     cmdline_path = Path(f"/proc/{pid}/cmdline")
     try:
         raw = cmdline_path.read_bytes()
-    except (FileNotFoundError, PermissionError, OSError):
+    except (FileNotFoundError, PermissionError, OSError) as _e:
+        logger.warning("[Status] Dosya/klasor hatasi (L137): %s", FileNotFoundError)
         pass
     else:
         if raw:
@@ -149,7 +153,8 @@ def _read_process_cmdline(pid: int) -> Optional[str]:
         )
         if result.returncode == 0 and result.stdout.strip():
             return result.stdout.strip()
-    except (OSError, subprocess.TimeoutExpired):
+    except (OSError, subprocess.TimeoutExpired) as _e:
+        logger.warning("[Status] Dosya/klasor hatasi (L152): %s", OSError)
         pass
 
     # Windows fallback: psutil (already used by _pid_exists)
@@ -159,7 +164,8 @@ def _read_process_cmdline(pid: int) -> Optional[str]:
         cmdline_parts = proc.cmdline()
         if cmdline_parts:
             return " ".join(cmdline_parts)
-    except Exception:
+    except Exception as _e:
+        logger.warning("[Status] except Exception (L162): %s", Exception)
         pass
 
     return None
@@ -361,11 +367,13 @@ def _cleanup_invalid_pid_path(pid_path: Path, *, cleanup_stale: bool) -> None:
         return
     try:
         pid_path.unlink(missing_ok=True)
-    except Exception:
+    except Exception as _e:
+        logger.warning("[Status] except Exception (L364): %s", Exception)
         pass
     try:
         _get_gateway_lock_path(pid_path).unlink(missing_ok=True)
-    except Exception:
+    except Exception as _e:
+        logger.warning("[Status] except Exception (L368): %s", Exception)
         pass
 
 
@@ -376,7 +384,8 @@ def _write_gateway_lock_record(handle) -> None:
     handle.flush()
     try:
         os.fsync(handle.fileno())
-    except OSError:
+    except OSError as _e:
+        logger.warning("[Status] Dosya/klasor hatasi (L379): %s", OSError)
         pass
 
 
@@ -421,7 +430,7 @@ def _pid_exists(pid: int) -> bool:
     try:
         import psutil  # type: ignore
         return bool(psutil.pid_exists(int(pid)))
-    except ImportError:
+    except ImportError as _e:
         pass  # Fall through to stdlib fallback.
 
     if _IS_WINDOWS:
@@ -478,7 +487,8 @@ def _release_file_lock(handle) -> None:
             msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
         else:
             fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
-    except OSError:
+    except OSError as _e:
+        logger.warning("[Status] Dosya/klasor hatasi (L481): %s", OSError)
         pass
 
 
@@ -513,7 +523,8 @@ def release_gateway_runtime_lock() -> None:
     _release_file_lock(handle)
     try:
         handle.close()
-    except OSError:
+    except OSError as _e:
+        logger.warning("[Status] Dosya/klasor hatasi (L516): %s", OSError)
         pass
 
 
@@ -536,7 +547,8 @@ def is_gateway_runtime_lock_active(lock_path: Optional[Path] = None) -> bool:
     finally:
         try:
             handle.close()
-        except OSError:
+        except OSError as _e:
+            logger.warning("[Status] Dosya/klasor hatasi (L539): %s", OSError)
             pass
 
 
@@ -560,7 +572,8 @@ def write_pid_file() -> None:
     except Exception:
         try:
             path.unlink(missing_ok=True)
-        except OSError:
+        except OSError as _e:
+            logger.warning("[Status] Dosya/klasor hatasi (L563): %s", OSError)
             pass
         raise
 
@@ -676,7 +689,8 @@ def remove_pid_file() -> None:
                 # PID file belongs to a different process — leave it alone.
                 return
         path.unlink(missing_ok=True)
-    except Exception:
+    except Exception as _e:
+        logger.warning("[Status] except Exception (L679): %s", Exception)
         pass
 
 
@@ -704,7 +718,8 @@ def acquire_scoped_lock(scope: str, identity: str, metadata: Optional[dict[str, 
         # during rapid Slack reconnect retries).
         try:
             lock_path.unlink(missing_ok=True)
-        except OSError:
+        except OSError as _e:
+            logger.warning("[Status] Dosya/klasor hatasi (L707): %s", OSError)
             pass
     if existing:
         try:
@@ -772,12 +787,14 @@ def acquire_scoped_lock(scope: str, identity: str, metadata: Optional[dict[str, 
                                     if _state in {"T", "t"}:  # stopped or tracing stop
                                         stale = True
                                     break
-                    except (OSError, PermissionError):
+                    except (OSError, PermissionError) as _e:
+                        logger.warning("[Status] Dosya/klasor hatasi (L775): %s", OSError)
                         pass
         if stale:
             try:
                 lock_path.unlink(missing_ok=True)
-            except OSError:
+            except OSError as _e:
+                logger.warning("[Status] Dosya/klasor hatasi (L780): %s", OSError)
                 pass
         else:
             return False, existing
@@ -792,7 +809,8 @@ def acquire_scoped_lock(scope: str, identity: str, metadata: Optional[dict[str, 
     except Exception:
         try:
             lock_path.unlink(missing_ok=True)
-        except OSError:
+        except OSError as _e:
+            logger.warning("[Status] Dosya/klasor hatasi (L795): %s", OSError)
             pass
         raise
     return True, None
@@ -810,7 +828,8 @@ def release_scoped_lock(scope: str, identity: str) -> None:
         return
     try:
         lock_path.unlink(missing_ok=True)
-    except OSError:
+    except OSError as _e:
+        logger.warning("[Status] Dosya/klasor hatasi (L813): %s", OSError)
         pass
 
 
@@ -854,7 +873,8 @@ def release_all_scoped_locks(
             try:
                 lock_file.unlink(missing_ok=True)
                 removed += 1
-            except OSError:
+            except OSError as _e:
+                logger.warning("[Status] Dosya/klasor hatasi (L857): %s", OSError)
                 pass
     return removed
 
@@ -923,14 +943,16 @@ def _consume_pid_marker_for_self(
     except (KeyError, TypeError, ValueError):
         try:
             path.unlink(missing_ok=True)
-        except OSError:
+        except OSError as _e:
+            logger.warning("[Status] Dosya/klasor hatasi (L926): %s", OSError)
             pass
         return False
 
     if _marker_is_stale(written_at, ttl_s):
         try:
             path.unlink(missing_ok=True)
-        except OSError:
+        except OSError as _e:
+            logger.warning("[Status] Dosya/klasor hatasi (L933): %s", OSError)
             pass
         return False
 
@@ -957,7 +979,8 @@ def _consume_pid_marker_for_self(
 
     try:
         path.unlink(missing_ok=True)
-    except OSError:
+    except OSError as _e:
+        logger.warning("[Status] Dosya/klasor hatasi (L960): %s", OSError)
         pass
 
     return matches
@@ -1011,7 +1034,8 @@ def clear_takeover_marker() -> None:
     """Remove the takeover marker unconditionally. Safe to call repeatedly."""
     try:
         _get_takeover_marker_path().unlink(missing_ok=True)
-    except OSError:
+    except OSError as _e:
+        logger.warning("[Status] Dosya/klasor hatasi (L1014): %s", OSError)
         pass
 
 
@@ -1077,7 +1101,8 @@ def planned_stop_marker_targets_self() -> bool:
         # Malformed marker can never match anyone — drop it.
         try:
             path.unlink(missing_ok=True)
-        except OSError:
+        except OSError as _e:
+            logger.warning("[Status] Dosya/klasor hatasi (L1080): %s", OSError)
             pass
         return False
 
@@ -1086,7 +1111,8 @@ def planned_stop_marker_targets_self() -> bool:
         # clean it up so it cannot crash-loop a freshly booted gateway.
         try:
             path.unlink(missing_ok=True)
-        except OSError:
+        except OSError as _e:
+            logger.warning("[Status] Dosya/klasor hatasi (L1089): %s", OSError)
             pass
         return False
 
@@ -1112,7 +1138,8 @@ def clear_planned_stop_marker() -> None:
     """Remove the planned-stop marker unconditionally."""
     try:
         _get_planned_stop_marker_path().unlink(missing_ok=True)
-    except OSError:
+    except OSError as _e:
+        logger.warning("[Status] Dosya/klasor hatasi (L1115): %s", OSError)
         pass
 
 

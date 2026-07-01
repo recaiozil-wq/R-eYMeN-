@@ -72,16 +72,15 @@ def cmd_run(gonder, cid, arg=""):
     if not arg.strip():
         gonder(cid, "Kullanim: /run <hedef>\nOrnek: /run Python dosyasi olustur")
         return
-    from reymen.ag.telegram_bot import _gorev_kilidi, _aktif_gorev
+    import reymen.ag.telegram_bot as _bot_m
     import threading as _th
-    if not _gorev_kilidi.acquire(blocking=False):
+    if not _bot_m._gorev_kilidi.acquire(blocking=False):
         gonder(cid, "Simdi baska bir gorev calisiyor. /cancel ile iptal et.")
         return
     gonder(cid, f"Basladi: {arg[:100]}")
     def _calistir():
-        global _gorev_kilidi, _aktif_gorev
         iptal = _th.Event()
-        _aktif_gorev = {"hedef": arg, "iptal": iptal, "chat_id": cid}
+        _bot_m._aktif_gorev = {"hedef": arg, "iptal": iptal, "chat_id": cid}
         try:
             from reymen.sistem.main import AIAgentOrchestrator, CONFIG
             agent = AIAgentOrchestrator(config=CONFIG, max_tur=20, onay_iste=False)
@@ -105,8 +104,8 @@ def cmd_run(gonder, cid, arg=""):
         except Exception as e:
             gonder(cid, f"Ajan baslatilamadi: {e}")
         finally:
-            _aktif_gorev = None
-            _gorev_kilidi.release()
+            _bot_m._aktif_gorev = None
+            _bot_m._gorev_kilidi.release()
     _th.Thread(target=_calistir, daemon=True).start()
 
 

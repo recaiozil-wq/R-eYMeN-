@@ -37,7 +37,8 @@ def _notify_provider_jobs_changed_safe() -> None:
     try:
         from cron.scheduler import _notify_provider_jobs_changed
         _notify_provider_jobs_changed()
-    except Exception:
+    except Exception as _e:
+        logger.warning("[CronjobTool] except Exception (L40): %s", Exception)
         pass
 
 
@@ -363,7 +364,7 @@ def _resolve_model_override(model_obj: Optional[Dict[str, Any]]) -> tuple:
             model_cfg = cfg.get("model", {})
             if isinstance(model_cfg, dict):
                 provider_name = model_cfg.get("provider") or None
-        except Exception:
+        except Exception as _e:
             pass  # Best-effort; provider stays None
     return (provider_name, model_name)
 

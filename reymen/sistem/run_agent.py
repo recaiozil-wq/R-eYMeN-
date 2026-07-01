@@ -96,7 +96,8 @@ except ImportError:
         def flush(self):
             try:
                 self._inner.flush()
-            except (OSError, ValueError):
+            except (OSError, ValueError) as _e:
+                logger.warning("[RunAgent] Dosya/klasor hatasi (L99): %s", OSError)
                 pass
 
         def fileno(self):

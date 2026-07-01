@@ -137,18 +137,18 @@ def _env_yukle():
     if load_dotenv is None:
         return
 
-    # 1. Proje kokundeki .env
+    # 1. Proje kokundeki .env (fallback — override=False, profildeki degerleri ezmez)
     y = _PROJE_KOK / ".env"
     if y.exists():
-        load_dotenv(str(y), override=True)
-        logger.info(".env yuklendi: %s", y)
+        load_dotenv(str(y), override=False)
+        logger.debug(".env fallback yuklendi: %s", y)
 
-    # 2. Hermes profil .env (fallback)
+    # 2. Hermes profil .env (kazanan — override=True, profildeki degerler kesin gecerli)
     profil = os.environ.get("HERMES_PROFILE", "reymen")
     hermes_env = Path.home() / "AppData" / "Local" / "hermes" / "profiles" / profil / ".env"
     if hermes_env.exists():
-        load_dotenv(str(hermes_env), override=False)
-        logger.info("Hermes profil .env yuklendi: %s", hermes_env)
+        load_dotenv(str(hermes_env), override=True)
+        logger.info("Hermes profil .env yuklendi: %s (override=True)", hermes_env)
 
 
 _ = _env_yukle()
@@ -577,13 +577,16 @@ class BotProcess:
     # ── Beyin baslat ──────────────────────────────────────────────────
 
     def _beyin_baslat(self):
-        """Beyin + ConversationLoop baslat."""
+        """Beyin + ConversationLoop baslat. SADECE deepseek-v4-flash."""
         if BEYIN_CLS is None:
             logger.warning("[%s] Beyin modulu yuklu degil!", self.bot_ad)
             return
 
-        provider = self.ayarlar.get("provider", "deepseek")
-        model = self.ayarlar.get("model", "deepseek-v4-flash")
+        provider = "deepseek"
+        model = "deepseek-v4-flash"
+        # ayarlar.json'daki eski değerleri override et
+        self.ayarlar["provider"] = provider
+        self.ayarlar["model"] = model
 
         deepseek_key = os.environ.get("DEEPSEEK_API_KEY", "")
         openrouter_key = os.environ.get("OPENROUTER_API_KEY", "")
@@ -616,6 +619,53 @@ class BotProcess:
                 logger.warning("[%s] ConversationLoop baslatma hatasi: %s", self.bot_ad, e)
 
         logger.info("[%s] Beyin aktif: %s / %s", self.bot_ad, provider, model)
+
+    # ── TOOL: Web Arama ────────────────────────────────────────────────
+
+    def _tool_web_search(self, sorgu: str) -> str:
+        """Web'de ara ve sonucu metin olarak dondur."""
+        import urllib.parse as _up
+        import requests as _req
+        import re as _re
+
+        # 1. BING (en stabil)
+        try:
+            url = f"https://www.bing.com/search?q={_up.quote(sorgu)}&mkt=tr-TR"
+            headers = {"User-Agent": "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36"}
+            r = _req.get(url, headers=headers, timeout=10)
+            sonuc = " | ".join(_re.findall(r'<li[^>]*class="b_algo"[^>]*>.*?<h2[^>]*>(.*?)</h2>', r.text, _re.DOTALL)[:5])
+            if sonuc:
+                sonuc = _re.sub(r'<[^>]+>', '', sonuc)  # HTML tag temizligi
+                sonuc = _re.sub(r'&#\d+;', '', sonuc)   # HTML entity temizligi
+                return sonuc.strip()
+        except Exception as _e:
+            logger.warning("[%s] Bing hatasi: %s", self.bot_ad, _e)
+
+        # 2. DUCKDUCKGO FALLBACK
+        try:
+            url = f"https://html.duckduckgo.com/html/?q={_up.quote(sorgu)}"
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+            r = _req.get(url, headers=headers, timeout=10)
+            sonuc = " ".join(_re.findall(r'<a[^>]*class="result__a"[^>]*>(.*?)</a>', r.text)[:5])
+            if sonuc:
+                return sonuc
+        except:
+            pass
+
+        return "(web arama su an kullanilamiyor)"
+
+    # ── TOOL: Terminal ─────────────────────────────────────────────────
+
+    def _tool_terminal(self, komut: str) -> str:
+        """Komutu calistir ve ciktiyi dondur."""
+        try:
+            import subprocess as _sp
+            r = _sp.run(komut, shell=True, capture_output=True, text=True, timeout=15)
+            cikti = r.stdout.strip()[:500] if r.stdout.strip() else r.stderr.strip()[:500]
+            return cikti if cikti else "(cikti yok)"
+        except Exception as e:
+            logger.warning("[%s] Terminal hatasi: %s", self.bot_ad, e)
+            return f"(terminal hatasi: {e})"
 
     # ── AI yanit uret ──────────────────────────────────────────────────
 
@@ -668,15 +718,44 @@ class BotProcess:
                                 "Sen ReYMeN adinda yardimsever bir AI asistanisin. "
                                 "Kisa ve oz cevap ver. Turkce konus."
                             )
-                    # Guncel durum.json verisini prompt'a ekle
-                    try:
-                        from reymen.sistem.durum import durum_oku as _durum_oku
-                        _durum = _durum_oku()
-                        sistem += "\n\n📊 GUNCEL DURUM:\n"
-                        sistem += _durum
-                    except Exception as _e:
-                        logger.warning("[TelegramBot] except Exception (L672): %s", Exception)
-                        pass
+                    # ── TARIH VE TEMEL KURAL ───────────────────────────
+                    from datetime import date as _date
+                    sistem += f"\n\n[TEMEL KURAL: ÖNCE BAK, SONRA KONUŞ]\n"
+                    sistem += f"BUGUNUN TARIHI: {_date.today()}\n"
+                    sistem += "1. Önce web'den araştır. Web sonucu varsa SADECE onu kullan, kendi ezberinden ASLA tahmin etme.\n"
+                    sistem += "2. Web sonucu yoksa 'güncel veri alınamadı' de, kendi bilginle tahmin etme.\n"
+                    sistem += "3. Sorunu analiz et, adım adım çözüm sun, alternatifleri belirt.\n"
+                    sistem += "4. Selam/teşekkür gibi basit mesajlarda kısa cevap ver.\n"
+
+                    # ── TOOL OTOMATIK CALISTIRMA ─────────────────────
+                    _tool_cikti = ""
+                    _mesaj_lower = mesaj.lower()
+
+                    # Web arama: soru/sikayet iceren her mesajda tetiklenir
+                    _soru_mi = ("?" in mesaj or "nedir" in _mesaj_lower or "nasıl" in _mesaj_lower
+                                or "ne" in _mesaj_lower or "mi" in _mesaj_lower
+                                or "kaç" in _mesaj_lower or "neden" in _mesaj_lower
+                                or len(mesaj.split()) >= 4)
+                    _selam_mi = _mesaj_lower.strip() in ["merhaba", "selam", "hey", "sa", "hi", "hello", "iyi günler"]
+                    if _soru_mi and not _selam_mi:
+                        logger.info("[%s] 🔍 Web arama tetiklendi: %s", self.bot_ad, mesaj[:60])
+                        _tool_cikti = self._tool_web_search(mesaj)
+                        logger.info("[%s] 🔍 Web sonucu (%d karakter): %s", self.bot_ad, len(_tool_cikti), _tool_cikti[:200])
+                        sistem += f"\n\n🔍 WEB ARAMA SONUCU:\n{_tool_cikti}\n"
+
+                    # Terminal tetikleyicisi ($ ile baslayan komut)
+                    if mesaj.strip().startswith("$") and len(mesaj.strip()) > 1:
+                        _komut = mesaj.strip()[1:].strip()
+                        logger.info("[%s] 💻 Terminal tetiklendi: %s", self.bot_ad, _komut)
+                        _term_cikti = self._tool_terminal(_komut)
+                        sistem += f"\n\n💻 TERMINAL CIKTISI:\n{_term_cikti}\n"
+
+                    # ── /run komutu ────────────────────────────────────
+                    if mesaj.strip().startswith("/run") and len(mesaj.strip()) > 4:
+                        _gorev = mesaj.strip()[4:].strip()
+                        logger.info("[%s] 🚀 /run tetiklendi: %s", self.bot_ad, _gorev)
+                        _web_cikti = self._tool_web_search(_gorev)
+                        sistem += f"\n\n🚀 GOREV BILGISI:\n{_web_cikti}\n"
 
                     gecmis = self.ayarlar.get("konusma_gecmisi", [])
                     msg_list = []
@@ -742,24 +821,18 @@ class BotProcess:
         komut = parts[0].lower()
         arg = parts[1].strip() if len(parts) > 1 else ""
 
-        # — Kendi AI ayar komutlari —
+        # — Kendi AI ayar komutlari (SADECE deepseek-v4-flash) —
         if komut == "/model":
             if not arg:
-                self.mesaj_gonder(chat_id, f"Model: {self.ayarlar.get('model')}")
+                self.mesaj_gonder(chat_id, f"Model: {self.ayarlar.get('model')} (kilitli)")
             else:
-                self.ayarlar["model"] = arg
-                self._ayar_kaydet()
-                self._beyin_baslat()
-                self.mesaj_gonder(chat_id, f"Model guncellendi: {arg}")
+                self.mesaj_gonder(chat_id, "❌ Model degistirme devre disi. Sadece deepseek-v4-flash kullanilir.")
             return True
         elif komut == "/provider":
             if not arg:
-                self.mesaj_gonder(chat_id, f"Provider: {self.ayarlar.get('provider')}")
+                self.mesaj_gonder(chat_id, f"Provider: {self.ayarlar.get('provider')} (kilitli)")
             else:
-                self.ayarlar["provider"] = arg
-                self._ayar_kaydet()
-                self._beyin_baslat()
-                self.mesaj_gonder(chat_id, f"Provider guncellendi: {arg}")
+                self.mesaj_gonder(chat_id, "❌ Provider degistirme devre disi. Sadece deepseek kullanilir.")
             return True
         elif komut == "/sistem":
             if not arg:
@@ -947,6 +1020,11 @@ def _cmd_run(msg: dict, hedef: str):
 
             if hata_listesi[0]:
                 gonder(cid, f"HATA:\n{hata_listesi[0][:500]}")
+                try:
+                    from reymen.sistem.ortak_komut import reasoning_loop as _rl, guncelle as _og
+                    _rl(hata_listesi[0], str(_og())[:2000], "telegram_bot", [])
+                except Exception:
+                    pass
             else:
                 sonuc = sonuc_listesi[0] or "(tamamlandi, cikti yok)"
                 gonder(cid, f"Sonuc:\n{str(sonuc)[:2000]}")

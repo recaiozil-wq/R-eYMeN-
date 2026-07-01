@@ -67,11 +67,13 @@ def _release_singleton_lock(handle) -> None:
     try:
         from reymen.gateway.status import _release_file_lock
         _release_file_lock(handle)
-    except Exception:
+    except Exception as _e:
+        logger.warning("[KanbanWatchers] except Exception (L70): %s", Exception)
         pass
     try:
         handle.close()
-    except Exception:
+    except Exception as _e:
+        logger.warning("[KanbanWatchers] except Exception (L74): %s", Exception)
         pass
 
 
@@ -924,7 +926,8 @@ class GatewayKanbanWatchersMixin:
                 if conn is not None:
                     try:
                         conn.close()
-                    except Exception:
+                    except Exception as _e:
+                        logger.warning("[KanbanWatchers] except Exception (L927): %s", Exception)
                         pass
 
         def _tick_once() -> "list[tuple[str, Optional[object]]]":
@@ -975,7 +978,8 @@ class GatewayKanbanWatchersMixin:
                     if conn is not None:
                         try:
                             conn.close()
-                        except Exception:
+                        except Exception as _e:
+                            logger.warning("[KanbanWatchers] except Exception (L978): %s", Exception)
                             pass
             return False
 

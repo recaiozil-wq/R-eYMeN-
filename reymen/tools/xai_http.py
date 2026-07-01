@@ -4,6 +4,9 @@ import json
 import os
 from pathlib import Path
 from typing import Dict, Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def has_xai_credentials() -> bool:
@@ -22,7 +25,8 @@ def has_xai_credentials() -> bool:
             tokens = xai_state.get("tokens", {}) if isinstance(xai_state, dict) else {}
             access = tokens.get("access_token", "") if isinstance(tokens, dict) else ""
             return bool(str(access or "").strip())
-        except Exception:
+        except Exception as _e:
+            logger.warning("[XaiHttp] except Exception (L25): %s", Exception)
             pass
     return False
 
@@ -41,7 +45,8 @@ def get_env_value(name: str, default=None):
                 k = k.strip().strip("'\"")
                 if k == name:
                     return v.strip().strip("'\"")
-        except Exception:
+        except Exception as _e:
+            logger.warning("[XaiHttp] except Exception (L44): %s", Exception)
             pass
     return os.environ.get(name, default)
 

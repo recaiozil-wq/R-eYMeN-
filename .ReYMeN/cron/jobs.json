@@ -139,7 +139,35 @@
       "son_hata": null,
       "siraki_calisma": "2026-06-30T20:00:00+03:00",
       "pid": null
+    },
+    {
+      "id": "72f937ba-201",
+      "ad": "skill-sync-to-hafiza",
+      "komut": "",
+      "script": "reymen/cereyan/scan_skills_to_hafiza_cron.py",
+      "prompt": "",
+      "cron": "0 */6 * * *",
+      "zaman": "her 6 saatte bir",
+      "aktif": true,
+      "durum": "scheduled",
+      "timeout": 300,
+      "max_retry": 3,
+      "retry_sayisi": 0,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "skills": [],
+      "deliver": "origin",
+      "deliver_hedef": null,
+      "aciklama": "Skills .md dosyalarını tara, OnceHafiza DB'sine kaydet (her 6 saatte bir)",
+      "kaynak": "cron_manager",
+      "olusturma": "2026-07-01T18:55:00+03:00",
+      "son_calisma": null,
+      "son_durum": null,
+      "son_hata": null,
+      "siraki_calisma": null,
+      "pid": null
     }
   ],
-  "updated_at": "2026-06-29T20:00:33.753179+03:00"
+  "updated_at": "2026-07-01T18:55:00+03:00"
 }

@@ -118,7 +118,8 @@ def _jobs_lock():
                             fcntl.flock(lock_fd, fcntl.LOCK_UN)
                         elif msvcrt is not None:
                             getattr(msvcrt, "locking")(lock_fd.fileno(), getattr(msvcrt, "LK_UNLCK"), 1)
-                    except (OSError, IOError):
+                    except (OSError, IOError) as _e:
+                        logger.warning("[Jobs] Dosya/klasor hatasi (L121): %s", OSError)
                         pass
                     finally:
                         lock_fd.close()
@@ -237,7 +238,7 @@ def _secure_dir(path: Path):
     """Set directory to owner-only access (0700). No-op on Windows."""
     try:
         os.chmod(path, 0o700)
-    except (OSError, NotImplementedError):
+    except (OSError, NotImplementedError) as _e:
         pass  # Windows or other platforms where chmod is not supported
 
 
@@ -246,7 +247,8 @@ def _secure_file(path: Path):
     try:
         if path.exists():
             os.chmod(path, 0o600)
-    except (OSError, NotImplementedError):
+    except (OSError, NotImplementedError) as _e:
+        logger.warning("[Jobs] Dosya/klasor hatasi (L249): %s", OSError)
         pass
 
 
@@ -360,7 +362,8 @@ def parse_schedule(schedule: str) -> Dict[str, Any]:
             "run_at": run_at.isoformat(),
             "display": f"once in {original}"
         }
-    except ValueError:
+    except ValueError as _e:
+        logger.warning("[Jobs] Gecersiz deger (L363): %s", ValueError)
         pass
     
     raise ValueError(
@@ -444,7 +447,8 @@ def _compute_grace_seconds(schedule: dict) -> int:
             period_seconds = int((second - first).total_seconds())
             grace = period_seconds // 2
             return max(MIN_GRACE, min(grace, MAX_GRACE))
-        except Exception:
+        except Exception as _e:
+            logger.warning("[Jobs] except Exception (L447): %s", Exception)
             pass
 
     return MIN_GRACE
@@ -562,7 +566,8 @@ def _save_jobs_unlocked(jobs: List[Dict[str, Any]]):
     except BaseException:
         try:
             os.unlink(tmp_path)
-        except OSError:
+        except OSError as _e:
+            logger.warning("[Jobs] Dosya/klasor hatasi (L565): %s", OSError)
             pass
         raise
 
@@ -1109,7 +1114,7 @@ def claim_job_for_fire(job_id: str, *, claim_ttl_seconds: int = 300) -> bool:
                     claimed_at = _ensure_aware(datetime.fromisoformat(existing["at"]))
                     if (now - claimed_at).total_seconds() < claim_ttl_seconds:
                         return False  # someone holds a fresh claim
-                except Exception:
+                except Exception as _e:
                     pass  # malformed claim → overwrite
             job["fire_claim"] = {"at": now.isoformat(), "by": _machine_id()}
             kind = job.get("schedule", {}).get("kind")
@@ -1245,7 +1250,8 @@ def save_job_output(job_id: str, output: str):
     except BaseException:
         try:
             os.unlink(tmp_path)
-        except OSError:
+        except OSError as _e:
+            logger.warning("[Jobs] Dosya/klasor hatasi (L1248): %s", OSError)
             pass
         raise
     

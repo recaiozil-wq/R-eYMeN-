@@ -1152,5 +1152,51 @@
     "basari_orani": 1.0,
     "olusturma": "2026-07-01",
     "son_basari": "2026-07-01"
+  },
+  "slm___referanslar_________anahtar______onay_sureci": {
+    "ad": "Slm\n\n[Referanslar]\n  - {\\\"anahtar\\\": \\\"onay_sureci",
+    "aciklama": "Slm\n\n[Referanslar]\n  - {\\\"anahtar\\\": \\\"onay_sureci",
+    "tetikleyiciler": [
+      "\\\"deger\\\":",
+      "{\\\"anahtar\\\":",
+      "\\\"onay_sureci_tamamlandi_20260621\\\",",
+      "-",
+      "[referanslar]",
+      "slm"
+    ],
+    "adimlar": [
+      "FC/MCPCLIENT_FILESYSTEM_READ_TEXT_FILE"
+    ],
+    "basari_kriteri": "Selam! Nasılsın?",
+    "kullanim_sayisi": 1,
+    "basari_orani": 1.0,
+    "olusturma": "2026-07-01",
+    "son_basari": "2026-07-01"
+  },
+  "egey___referanslar_________anahtar______onay_surec": {
+    "ad": "Egey\n\n[Referanslar]\n  - {\\\"anahtar\\\": \\\"onay_surec",
+    "aciklama": "Egey\n\n[Referanslar]\n  - {\\\"anahtar\\\": \\\"onay_surec",
+    "tetikleyiciler": [
+      "egey",
+      "[referanslar]",
+      "-",
+      "{\\\"anahtar\\\":",
+      "\\\"onay_sureci_tamamlandi_20260621\\\",",
+      "\\\"deger\\\":"
+    ],
+    "adimlar": [
+      "FC/MCPCLIENT_FILESYSTEM_READ_TEXT_FILE",
+      "FC/HAFIZA_ARA",
+      "FC/MCPCLIENT_FILESYSTEM_READ_FILE",
+      "FC/KOMUT_CALISTIR",
+      "FC/BROWSER_AGENT",
+      "FC/HATA_RAPOR",
+      "FC/MCP_TOOL_LISTELE"
+    ],
+    "basari_kriteri": "Egey hakkında size nasıl yardımcı olabilirim? Lütfen daha fazla bilgi verin.",
+    "kullanim_sayisi": 1,
+    "basari_orani": 1.0,
+    "olusturma": "2026-07-01",
+    "son_basari": "2026-07-01"
   }
 }
