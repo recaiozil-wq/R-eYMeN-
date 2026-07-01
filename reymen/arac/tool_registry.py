@@ -189,11 +189,17 @@ class ToolRegistry:
         """Tools/ klasorundeki tum .py dosyalarini yukle."""
         if not TOOLS_DIR.exists():
             return
+        import importlib.util
         for f in sorted(TOOLS_DIR.glob("*.py")):
             if f.name.startswith("_") or f.name == "__init__.py":
                 continue
             try:
-                mod = importlib.import_module(f"tools.{f.stem}")
+                mod_name = f"tools_{f.stem}"
+                spec = importlib.util.spec_from_file_location(mod_name, f)
+                if spec is None or spec.loader is None:
+                    continue
+                mod = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(mod)
                 if hasattr(mod, "run"):
                     self._tools[f.stem.upper()] = getattr(mod, "run")
                     # TOOL_META varsa meta'ya ekle
