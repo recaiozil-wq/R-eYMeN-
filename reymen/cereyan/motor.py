@@ -424,6 +424,8 @@ class Motor:
             "reymen.sistem.schema_manager",
             # Docker Sandbox + Threat Detection
             "reymen.guvenlik.docker_sandbox",
+            # Container Sandbox (shell komutlari icin Docker izolasyonu)
+            "reymen.guvenlik.container_sandbox",
             # Web Search Engine (coklu back-end)
             "reymen.arac.web_search_engine",
             # Gorsel Uretim Engine (FAL/OpenAI/xAI/Stub)
@@ -1155,6 +1157,7 @@ class Motor:
                      "SKILL_SCRIPT_YARDIM", "SKILL_EVAL_EKLE", "SKILL_EVAL_LISTELE",
                      "ACHIEVEMENTS_LISTE"},
         "faz6":     {"ARAC_URET", "GUVENLI_CALISTIR"},
+        "container": {"CONTAINER_DURUM", "CONTAINER_CALISTIR", "CONTAINER_IMAGE_HAZIRLA", "CONTAINER_MOD"},
         "claude":   {"CLAUDE_YARDIM", "CLAUDE_ANALIZ", "CLAUDE_KOD_YAZ",
                      "CLAUDE_HATA_AYIKLA", "CLAUDE_PLAN", "CLAUDE_REVIZE", "CLAUDE_DURUM"},
         "gorev":    {"TODO", "CLARIFY", "EXECUTE_CODE", "TUI_BASLAT", "KANBAN_GUNCELLE", "KANBAN_OZET"},
@@ -1284,6 +1287,10 @@ class Motor:
         "SKILL_EVAL_LISTELE":   "Skill eval listesi getiriliyor...",
         "ARAC_URET":           "Yeni arac uretiliyor (Code-As-A-Tool)...",
         "GUVENLI_CALISTIR":    "Guvenli sandbox'ta kod calistiriliyor...",
+        "CONTAINER_DURUM":     "Container sandbox durumu sorgulaniyor...",
+        "CONTAINER_CALISTIR":   "Container'da komut calistiriliyor...",
+        "CONTAINER_IMAGE_HAZIRLA": "Container image hazirlaniyor...",
+        "CONTAINER_MOD":       "Container sandbox modu degistiriliyor...",
         "HATA_WATCH_BASLAT":  "Hata watchdog baslatiliyor (ekran izleme)...",
         "HATA_WATCH_DURDUR":  "Hata watchdog durduruluyor...",
         "HATA_KOD_AL":        "Hata kodu aliniyor...",
@@ -1614,7 +1621,31 @@ class Motor:
     def _fallback_calistir(self, arac: str, params: List[str]) -> str:
         """Yedek if/else zinciri (registry calismazsa)."""
         if arac == "KOMUT_CALISTIR":
-            return self.terminal.calistir(params[0] if params else "") if self.terminal else "[Hata]: Terminal yok"
+            komut = params[0] if params else ""
+            if not komut:
+                return "[Hata]: Komut gerekli"
+            # Container sandbox aktifse container'da calistir
+            try:
+                from reymen.guvenlik.container_sandbox import komut_calistir as _container_komut
+                # Motor config'inden container ayarlarini gecir
+                _container_cfg = None
+                if hasattr(self, "config") and self.config:
+                    from reymen.guvenlik.container_sandbox import ContainerConfig
+                    _container_cfg = ContainerConfig.from_dict(self.config)
+                _cikti = _container_komut(komut, config=_container_cfg)
+                # Sandbox aktifse ve Docker varsa direkt container ciktisini dondur
+                # Sandbox kapaliysa veya Docker yoksa _local_calistir calisir (hatasiz dondur)
+                # Sadece "[ContainerSandbox]" ile baslayan hatalarda terminale dus
+                if not _cikti.startswith("[ContainerSandbox]"):
+                    return _cikti
+                # Container hatasi — normal terminale dus
+                logger.warning("[Motor] Container sandbox hatasi, normal terminale dusuluyor: %.100s", _cikti)
+            except ImportError:
+                pass  # container_sandbox yoksa normal terminal
+            except Exception as _ce:
+                logger.warning("[Motor] Container sandbox hatasi (fallback terminal): %s", _ce)
+            # Fallback: normal terminal
+            return self.terminal.calistir(komut) if self.terminal else "[Hata]: Terminal yok"
         if arac == "PYTHON_CALISTIR":
             # FAZ 6: once guvenli sandbox dene
             try:

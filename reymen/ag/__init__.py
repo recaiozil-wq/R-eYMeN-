@@ -24,6 +24,9 @@ from reymen.ag.delegasyon import (
     konusma_dongusu_hook_bul,
 )
 
+# MCP Sunucusu
+from reymen.ag.mcp_server import MCPServer, create_server, main as mcp_server_main
+
 # Kolay erişim
 delegasyon_sistemi_al = sistem_al
 
@@ -52,4 +55,8 @@ __all__ = [
     "sistem_al",
     "delegasyon_motor_kaydet",
     "konusma_dongusu_hook_bul",
+    # MCP Sunucusu
+    "MCPServer",
+    "create_server",
+    "mcp_server_main",
 ]

@@ -1,20 +1,20 @@
-# Karar Kaydı — 5 Proaktif Öneri (6-10) Uygulama
+# Karar Kaydı — Son 3 Kritik Öneri (2,4,5) Uygulama
 
-**Tarih:** 2026-07-01 23:40
+**Tarih:** 2026-07-01 23:45
 
 ## Ne yapıldı?
-30 öneriden 6-10 arası uygulandı.
+Kalan 🔴 KRİTİK 3 öneri uygulandı. 30 önerinin tamamı tamamlandı.
 
 ## Yapılanlar
 
 | # | Öneri | Çözüm | Durum |
 |---|-------|-------|-------|
-| 6 | Makefile eksik | `make install/test/lint/format/clean/security` hedefli Makefile oluşturuldu | ✅ |
-| 7 | .editorconfig eksik | indent_style=space, indent_size=4, utf-8, lf | ✅ |
-| 8 | Coverage config yok | pyproject.toml'a `[tool.coverage.run]` + `[tool.coverage.report]` eklendi (fail_under=30) | ✅ |
-| 9 | CI lint kapsamı | Önceki adımda `reymen/ tests/ reymen_launcher.py` yapıldı | ✅ |
-| 10 | ruff target-version | Önceki adımda py312 yapıldı | ✅ |
+| 2 | Python versiyon çelişkisi | Dockerfile: 3.11→3.12-slim, kurulum.bat: 3.11→3.12 winget, py312 kontrol | ✅ |
+| 4 | Dockerfile pyproject.toml'siz | COPY requirements.txt pyproject.toml . eklendi | ✅ |
+| 5 | CI continue-on-error:true | test aşaması → false (başarısız test pipeline'ı durdurur) | ✅ |
 
-## Toplam durum
-- 30 öneriden 25'i uygulandı (20-30 ✅, 11-19 ✅, 6-10 ✅)
-- Kalan: 🔴 1-5 (KRİTİK)
+## Toplam: 30/30 öneri tamamlandı
+- 🔴 1-5: ✅ (1 ve 3 önceki adımlarda düzeltilmişti)
+- 🟠 6-10: ✅
+- 🟡 11-19: ✅
+- 🔵 20-30: ✅

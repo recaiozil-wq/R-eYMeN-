@@ -54,6 +54,16 @@ try:
 except ImportError:
     _SKILL_CIKAR_AKTIF = False
 
+# ── @file/@url Referans Isleme (ref_processor) ─────────
+try:
+    from reymen.cereyan.ref_processor import ref_isle as _ref_isle
+    from reymen.cereyan.ref_processor import ref_context_olustur as _ref_context_olustur
+    _REF_PROCESSOR_AKTIF = True
+except ImportError:
+    _ref_isle = None
+    _ref_context_olustur = None
+    _REF_PROCESSOR_AKTIF = False
+
 # ── Yeni import'lar: circuit breaker, streaming, error classify ─────
 try:
     from reymen.cereyan.iteration_budget import IterationBudget
@@ -727,6 +737,29 @@ class ConversationLoop:
             __import__("logging").getLogger(__name__).warning(
                 "[SessizExcept] %%s: %%s", type(_e).__name__, _e
             )
+
+        # -- @file/@url Referans Isleme (ref_processor) -----------------
+        if _REF_PROCESSOR_AKTIF and _ref_isle is not None and _ref_context_olustur is not None:
+            try:
+                ref_zengin_metin, ref_liste = _ref_isle(hedef)
+                if ref_liste:
+                    ref_context = _ref_context_olustur(ref_liste)
+                    if ref_context:
+                        messages.append({"role": "user", "content": ref_context})
+                        log.info("[%s] %d referans eklendi (file=%d url=%d)",
+                                 task_id,
+                                 len(ref_liste),
+                                 sum(1 for r in ref_liste if r.get("tip") == "file" and r.get("basarili")),
+                                 sum(1 for r in ref_liste if r.get("tip") == "url" and r.get("basarili")))
+                    # Basarisiz referanslari logla
+                    for ref in ref_liste:
+                        if not ref.get("basarili"):
+                            log.warning("[%s] Ref basarisiz: %s=%s — %s",
+                                        task_id, ref["tip"], ref["kaynak"], ref.get("hata", "?"))
+                    # Orijinal mesajdaki @file/@url'leri [REF:] ile degistir
+                    hedef = ref_zengin_metin
+            except Exception as _ref_e:
+                log.warning("[%s] RefProcessor hatasi: %s", task_id, _ref_e)
 
         # Kullanici mesaji (en son)
         user_msg = hedef

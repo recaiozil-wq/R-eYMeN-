@@ -152,6 +152,7 @@ logging.level: INFO
 logging.file: .ReYMeN/logs/reymen.log
 logging.max_size_mb: 10
 logging.backup_count: 5
+mcp_server.enabled: false
 skills.dir: .ReYMeN/skills
 checkpoint.dir: .ReYMeN/checkpoints
 checkpoint.enabled: true

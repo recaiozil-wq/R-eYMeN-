@@ -58,7 +58,7 @@ jobs:
             --timeout=120 `
             --cov=reymen --cov-report=term-missing
         shell: bash
-        continue-on-error: true
+        continue-on-error: false
 
       - name: Test summary
         if: always()

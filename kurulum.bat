@@ -49,18 +49,18 @@ echo ^(2/5^) Python kontrolu...
 python --version >nul 2>&1
 if !errorlevel! neq 0 (
     echo [!!] Python bulunamadi! Yukleniyor...
-    winget install Python.Python.3.11 --silent --accept-package-agreements
+    winget install Python.Python.3.12 --silent --accept-package-agreements
     if !errorlevel! neq 0 (
         echo [^^!] Otomatik basarisiz^^! Suradan el ile indir:
-        echo     https://www.python.org/downloads/release/python-3119/
+        echo     https://www.python.org/downloads/release/python-3129/
         echo     Kurarken "Add Python to PATH" isaretle
         pause
         exit /b
     )
 )
-python -c "import sys; exit(0) if sys.version_info >= (3,11) else exit(1)" >nul 2>&1
+python -c "import sys; exit(0) if sys.version_info >= (3,12) else exit(1)" >nul 2>&1
 if !errorlevel! neq 0 (
-    echo [^^!] Python 3.11+ gerekli^^!
+    echo [^^!] Python 3.12+ gerekli^^!
     python --version
     pause
     exit /b
