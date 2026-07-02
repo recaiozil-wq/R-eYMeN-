@@ -116,6 +116,7 @@ github_push.py
 # src/reymen/ is TRACKED (518 dosya commitlendi)
 src/.ReYMeN/
 reports/
+rapor/              # Kullanıcıya özel raporlar (mutlak yol taraması vb.)
 jobs/
 hyperframes_output/
 .ReYMeN/nightly/
