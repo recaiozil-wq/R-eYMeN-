@@ -48,6 +48,14 @@ try:
 except Exception:
     pass
 
+# ── Otomatik self-update kontrolu (haftada 1 kez) ──────────────────────
+try:
+    from reymen.sistem.self_update import auto_update_check, auto_update_baslat
+    auto_update_check()        # Startup'ta bir kere kontrol et
+    auto_update_baslat()       # Arkaplanda periyodik kontrol baslat
+except Exception:
+    pass
+
 # ── Renkler ────────────────────────────────────────────────────────────────────
 _R   = "\033[0m"
 _C   = "\033[96m"   # cyan
@@ -503,7 +511,24 @@ def _build_parser():
     # Update komutu
     if _sub is not None:
         p_update = _sub.add_parser("update", help="ReYMeN'i güncelle (git pull + pip install)")
+        p_update.add_argument("--check", action="store_true",
+                              help="Sadece kontrol et, güncelleme yapma")
+        p_update.add_argument("--auto", action="store_true",
+                              help="Otomatik kontrol (haftada 1 kez)")
+        p_update.add_argument("--force", action="store_true",
+                              help="Auto kontrolü zorla (bekleme süresini yoksay)")
         p_update.set_defaults(func=_cmd_update)
+
+    # Setup komutu (kurulum sihirbazi)
+    if _sub is not None:
+        p_setup = _sub.add_parser("setup", help="ReYMeN kurulum sihirbazi (ilk kurulum)")
+        p_setup.add_argument("--fix", action="store_true",
+                             help="Eksikleri otomatik düzelt")
+        p_setup.add_argument("--check", action="store_true",
+                             help="Sadece kontrol et, değişiklik yapma")
+        p_setup.add_argument("--auto", action="store_true",
+                             help="Otomatik mod (sorunsuz çaliştir)")
+        p_setup.set_defaults(func=_cmd_setup)
 
     # Cost handler override (launcher'daki _cmd_cost_alt console.py'ye yönlendirir)
     for action in p._actions:
@@ -605,7 +630,75 @@ def _cmd_update(args=None):
     """ReYMeN'i güncelle: git pull + pip install -e ."""
     import subprocess as _sp
     import sys as _sys
+    import json as _json
 
+    # ── Self-Update modulu ──────────────────────────────────────────
+    try:
+        from reymen.sistem.self_update import check_for_updates, perform_update, auto_update_check
+    except ImportError:
+        print(f"  {_r('✗')} self_update modulu yuklenemedi!")
+        return 1
+
+    # ── --check: sadece kontrol ─────────────────────────────────────
+    if args is not None and getattr(args, 'check', False):
+        print(f"\n  {_c('╔══════════════════════════════════════╗')}")
+        print(f"  {_c('║')}   ReYMeN Versiyon Kontrolü         {_c('║')}")
+        print(f"  {_c('╚══════════════════════════════════════╝')}\n")
+
+        sonuc = check_for_updates()
+        if not sonuc.get("basarili"):
+            print(f"  {_r('✗')} Kontrol basarisiz: {sonuc.get('hata', 'Bilinmeyen hata')}")
+            return 1
+
+        print(f"  {_d('Mevcut:')}  {_g('v' + sonuc['mevcut_versiyon'])}")
+        if sonuc.get("son_versiyon"):
+            print(f"  {_d('GitHub:')}  {_g('v' + sonuc['son_versiyon'])}")
+        if sonuc.get("release_url"):
+            print(f"  {_d('Release:')} {sonuc['release_url']}")
+
+        if sonuc.get("guncel_var"):
+            print(f"\n  {_y('⟳')} {sonuc['aciklama']}")
+            print(f"  {_d('Güncellemek için:')} {_g('reymen update')}")
+        else:
+            print(f"\n  {_g('✓')} {sonuc['aciklama']}")
+
+        return 0
+
+    # ── --auto: otomatik kontrol ───────────────────────────────────
+    if args is not None and getattr(args, 'auto', False):
+        force = getattr(args, 'force', False)
+        print(f"\n  {_c('╔══════════════════════════════════════╗')}")
+        print(f"  {_c('║')}   Otomatik Güncelleme Kontrolü     {_c('║')}")
+        print(f"  {_c('╚══════════════════════════════════════╝')}\n")
+
+        sonuc = auto_update_check(force=force)
+
+        if sonuc.get("atlandi"):
+            print(f"  {_d('ℹ')} {sonuc['aciklama']}")
+            print(f"  {_d('Zorlamak için:')} {_g('reymen update --auto --force')}")
+            return 0
+
+        if not sonuc.get("basarili"):
+            print(f"  {_r('✗')} Kontrol basarisiz: {sonuc.get('hata', 'Bilinmeyen hata')}")
+            return 1
+
+        if sonuc.get("guncel_var"):
+            print(f"  {_y('⟳')} Yeni sürüm bulundu!")
+            guncel = sonuc.get("guncelleme", {})
+            if guncel.get("basarili"):
+                print(f"  {_g('✓')} {guncel.get('aciklama', 'Güncelleme tamam')}")
+                if guncel.get("git", {}).get("cikti"):
+                    for line in guncel["git"]["cikti"].splitlines()[-3:]:
+                        if line.strip():
+                            print(f"    {_d(line)}")
+            else:
+                print(f"  {_r('✗')} Güncelleme hatasi: {guncel.get('hata', '?')}")
+        else:
+            print(f"  {_g('✓')} {sonuc.get('aciklama', 'Güncel')}")
+
+        return 0
+
+    # ── Normal güncelleme (git pull + pip install) ─────────────────
     print(f"\n  {_c('╔══════════════════════════════════════╗')}")
     print(f"  {_c('║')}   ReYMeN Güncelleme Başlatılıyor...  {_c('║')}")
     print(f"  {_c('╚══════════════════════════════════════╝')}\n")
@@ -620,55 +713,64 @@ def _cmd_update(args=None):
     _versiyon_once = _buf.getvalue().strip()
     print(f"  {_d('Mevcut:')} {_versiyon_once}")
 
-    # 2. Git pull
-    print(f"\n  {_y('⟳')} Git çekiliyor...")
-    try:
-        r = _sp.run(["git", "pull"], cwd=_KOK, capture_output=True, text=True, timeout=60)
-        if r.returncode == 0:
-            print(f"  {_g('✓')} Git pull başarılı")
-            if r.stdout.strip():
-                for line in r.stdout.strip().splitlines()[-5:]:
-                    print(f"    {_d(line)}")
-        else:
-            print(f"  {_r('✗')} Git pull hatası:")
-            print(f"    {r.stderr[:200]}")
-            return 1
-    except Exception as e:
-        print(f"  {_r('✗')} Git pull başarısız: {e}")
+    # 2. perform_update kullan
+    sonuc = perform_update()
+
+    if not sonuc.get("basarili"):
+        print(f"  {_r('✗')} Güncelleme başarısız: {sonuc.get('hata', '?')}")
         return 1
 
-    # 3. pip install -e .
-    print(f"\n  {_y('⟳')} Bağımlılıklar güncelleniyor...")
-    _pip = _sys.executable.replace("python.exe", "pythonw.exe") if os.name == "nt" else _sys.executable
-    _pip = _sys.executable  # pythonw.exe pip calismaz, normal python kullan
-    try:
-        r = _sp.run(
-            [_sys.executable, "-m", "pip", "install", "-e", str(_KOK), "--quiet"],
-            capture_output=True, text=True, timeout=120
-        )
-        if r.returncode == 0:
-            print(f"  {_g('✓')} Bağımlılıklar güncellendi")
-        else:
-            print(f"  {_y('⚠')} pip uyarısı: {r.stderr[:200]}")
-    except Exception as e:
-        print(f"  {_r('✗')} pip hatası: {e}")
+    # 3. Özet
+    git_cikti = sonuc.get("git", {}).get("cikti", "")
+    if git_cikti:
+        for line in git_cikti.splitlines()[-5:]:
+            if line.strip():
+                print(f"    {_d(line)}")
 
-    # 4. Yeni versiyon — versiyon bilgisini yakala
-    _buf2 = _io.StringIO()
-    _old_stdout2 = sys.stdout
-    sys.stdout = _buf2
-    _show_version()
-    sys.stdout = _old_stdout2
-    _versiyon_sonra = _buf2.getvalue().strip()
-    print(f"\n  {_d('Güncel:')} {_versiyon_sonra}")
+    print(f"  {_g('✓')} {sonuc.get('aciklama', 'Güncelleme tamamlandı!')}")
 
-    # 5. Özet
-    print(f"\n  {_g('✓')} Güncelleme tamamlandı!")
-    print(f"  {_d('Önce:')} {_versiyon_once}")
-    print(f"  {_d('Sonra:')} {_versiyon_sonra}")
-    if _versiyon_once != _versiyon_sonra:
+    if sonuc["once"] != sonuc["sonra"]:
+        print(f"  {_d('Önce:')} {_g('v' + sonuc['once'])}")
+        print(f"  {_d('Sonra:')} {_g('v' + sonuc['sonra'])}")
         print(f"  {_y('⟳')} Sürüm değişti — gateway'leri yeniden başlatmayı unutma!")
     return 0
+
+
+# ── setup komutu (kurulum sihirbazi) ────────────────────────────────────────
+def _cmd_setup(args=None):
+    """reymen setup — kurulum sihirbazini calistir."""
+    from reymen.sistem.setup_wizard import setup_calistir
+
+    oto_kur = False
+    sadece_kontrol = False
+
+    if args is not None:
+        if getattr(args, 'auto', False):
+            oto_kur = True
+        elif getattr(args, 'fix', False):
+            oto_kur = True
+        if getattr(args, 'check', False):
+            sadece_kontrol = True
+
+    print(f"\n  {_c('╔══════════════════════════════════════╗')}")
+    print(f"  {_c('║')}   ReYMeN Kurulum Sihirbazi         {_c('║')}")
+    print(f"  {_c('╚══════════════════════════════════════╝')}")
+
+    sonuc = setup_calistir(
+        proje_kok=_KOK,
+        oto_kur=oto_kur,
+        sadece_kontrol=sadece_kontrol,
+    )
+
+    if sonuc.get("basarili"):
+        print(f"  {_g('✓')} Kurulum tamamlandi.")
+        return 0
+    else:
+        h = sonuc.get("hatali", 0)
+        t = sonuc.get("toplam", 1)
+        print(f"  {_y(f'{h}/{t} kontrol basarisiz')}")
+        print(f"  {_d('Eksikleri duzeltmek icin: reymen setup --fix')}")
+        return 1
 
 
 def _model_sec_interactive():
@@ -717,7 +819,7 @@ def main():
     # Tek kaynak: reymen.cli.build_parser + launcher ekleri (model)
     _LAUNCHER_CMD = {"model", "status", "cost", "gateway", "config",
                          "session", "doctor", "backup", "cron", "skills",
-                         "plugins", "tools", "setup", "profile", "logs",
+                         "skill", "plugins", "tools", "setup", "profile", "logs",
                          "mcp", "update"}
 
     # Argümanları parse et
@@ -772,6 +874,25 @@ def main():
             provider=cur_p,
             session_id=session_id,
         )
+
+    # ── Kurulum kontrolu (her REPL baslangicinda) ──────────────────────
+    try:
+        from reymen.sistem.setup_wizard import kurulum_tamamlandi_mi
+        if not kurulum_tamamlandi_mi(_KOK):
+            print(f"\n  {_y('!'*50)}")
+            print(f"  {_y('!')}  ReYMeN henuz kurulmamis!")
+            print(f"  {_y('!')}  Kurulum icin: {_c('reymen setup')}")
+            print(f"  {_y('!')}  Otomatik kurulum icin: {_c('reymen setup --fix')}")
+            print(f"  {_y('!'*50)}")
+            print()
+            cevap = input(f"  Kurulum sihirbazini baslat? [Y/n] ").strip().lower()
+            if not cevap or cevap in ("y", "yes", "e", "evet"):
+                _cmd_setup(type("Args", (), {"fix": True})())
+            else:
+                print(f"  {_d('Devam ediliyor... (reymen setup ile sonra kurabilirsiniz)')}")
+            print()
+    except Exception:
+        pass
 
     # Varsayılan: REPL başlat
     session_id = _uid.uuid4().hex[:8]

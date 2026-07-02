@@ -206,3 +206,36 @@ platforms:
   googlechat:
     enabled: false
     webhook_url: "${GOOGLE_CHAT_WEBHOOK_URL}"
+
+# ── Obsidian Vault Entegrasyonu ──────────────────────────────────────────
+# ReYMeN'in Obsidian vault'una erişmesi için vault yolunu belirtin.
+# Varsayılan: proje kökünde .obsidian/ klasörü aranır, bulunamazsa
+# kullanıcı ana dizinindeki Obsidian klasörlerine bakılır.
+obsidian:
+  vault_path: ""
+kurulum_tamamlandi: false
+
+# ── Auth Sistemi (Nous Portal alternatifi) ──────────────────────────────────
+# ReYMeN Auth: API key, JWT token, yetki seviyeleri ve multi-user yönetimi.
+# Modlar:
+#   enabled: true   → Auth sistemi aktif (token doğrulama zorunlu)
+#   enabled: false  → Auth sistemi pasif (herkese açık)
+# Role'ler: admin > user > guest
+# Token süreleri saniye cinsinden.
+auth:
+  enabled: true
+  jwt_secret_env: REYMEN_JWT_SECRET       # JWT imzalama anahtarı (.env'den okunur)
+  token_expiry: 3600                       # Access token süresi (1 saat)
+  refresh_expiry: 86400                    # Refresh token süresi (24 saat)
+  storage_path: .ReYMeN/auth/auth.db      # SQLite veritabanı yolu
+  default_role: user                       # Varsayılan kullanıcı rolü
+  multi_user: true                         # Çoklu kullanıcı desteği
+  api_key_validation: true                 # API key format doğrulama
+  live_key_check: false                    # Canlı API key doğrulama (network)
+  providers:                              # Desteklenen API provider'ları
+    - deepseek
+    - openai
+    - anthropic
+    - openrouter
+    - xai
+    - groq

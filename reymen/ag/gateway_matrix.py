@@ -88,7 +88,8 @@ class MatrixGateway(BasePlatformGateway):
         if self._client is not None:
             try:
                 await self._client.close()
-            except Exception:
+            except Exception as _e:
+                logger.warning("[GatewayMatrix] except Exception (L91): %s", Exception)
                 pass
             finally:
                 self._client = None

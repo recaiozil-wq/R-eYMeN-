@@ -167,7 +167,35 @@
       "son_hata": null,
       "siraki_calisma": null,
       "pid": null
+    },
+    {
+      "id": "nightly-improvement-001",
+      "ad": "nightly-self-improvement",
+      "komut": "",
+      "script": "src/reymen/scripts/nightly_improvement.py",
+      "prompt": "ReYMeN gece kendini geliştirme — 6 aşamalı döngü (once_hafiza, skill, memory, kod, cron, trend)",
+      "cron": "0 3 * * *",
+      "zaman": "her gece 03:00",
+      "aktif": true,
+      "durum": "scheduled",
+      "timeout": 600,
+      "max_retry": 2,
+      "retry_sayisi": 0,
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "skills": [],
+      "deliver": "origin",
+      "deliver_hedef": null,
+      "aciklama": "6 aşamalı gece kendini geliştirme döngüsü: once_hafiza analizi → skill iyileştirme → memory compaction → kod kalitesi → cron durumu → 7 gün trend",
+      "kaynak": "nightly_improvement",
+      "olusturma": "2026-07-02T16:00:00+03:00",
+      "son_calisma": null,
+      "son_durum": null,
+      "son_hata": null,
+      "siraki_calisma": null,
+      "pid": null
     }
   ],
-  "updated_at": "2026-07-01T18:55:00+03:00"
+  "updated_at": "2026-07-02T16:00:00+03:00"
 }

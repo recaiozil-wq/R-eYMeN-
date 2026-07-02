@@ -164,6 +164,18 @@ except ImportError:
     _SessionStorage = None
     _SESSION_AKTIF = False
 
+# ── Session Search FTS5 (tam metin arama) ─────────────────────────
+try:
+    from reymen.cereyan.session_search import (
+        SessionSearch as _SessionSearch,
+        session_search_al as _session_search_al,
+    )
+    _SESSION_SEARCH_AKTIF = True
+except ImportError:
+    _SessionSearch = None
+    _session_search_al = None
+    _SESSION_SEARCH_AKTIF = False
+
 # ── OnceHafiza (bellegi-oncelikli kontrol) ───────────────────────
 try:
     from reymen.sistem.once_hafiza import hafizada_ara as _hafizada_ara
@@ -572,6 +584,15 @@ class ConversationLoop:
             except Exception as e:
                 log.warning("[NUDGE] Baslatma hatasi: %s", e)
 
+        # ── Session Search FTS5 ─────────────────────────────────────
+        self._session_search = None
+        if _SESSION_SEARCH_AKTIF:
+            try:
+                self._session_search = _session_search_al()
+                log.info("[SESSION_SEARCH] FTS5 arama motoru aktif")
+            except Exception as e:
+                log.warning("[SESSION_SEARCH] Baslatma hatasi: %s", e)
+
         # ── Adaptif öğrenme ─────────────────────────────────────────
         self._adaptif = None
         if _ADAPTIF_AKTIF:
@@ -870,6 +891,9 @@ class ConversationLoop:
             user_msg = f"{baglam_str}\n\n{hedef}"
         messages.append({"role": "user", "content": user_msg})
 
+        # Session Search: kullanici mesajini kaydet
+        self._session_search_kaydet(session_id, user_msg, "user")
+
         # -- 3. REACT LOOP -----------------------------------------------
         final_yanit = None
         interrupted = False
@@ -989,6 +1013,8 @@ class ConversationLoop:
                 final_yanit = yanit_icerik
                 sonuc["basarili"] = True
                 messages.append({"role": "assistant", "content": final_yanit})
+                # Session Search: asistan yanitini kaydet
+                self._session_search_kaydet(session_id, final_yanit, "assistant")
                 budget.tur_bitir(basarili=True)
                 break
 
@@ -1133,6 +1159,21 @@ class ConversationLoop:
                 _proaktif_kontrol(hedef, str(sonuc.get("yanit", "")))
             except Exception:
                 pass
+
+        # ── Hafif compaction kontrolu: her konusma sonrasi ───────────
+        # MEMORY.md/USER.md %80 doluluk esigini gecerse otomatik compaction
+        try:
+            from reymen.cereyan.memory_compaction import hafif_compaction_kontrol
+            _comp_sonuc = hafif_compaction_kontrol()
+            if _comp_sonuc.get("islem_yapildi"):
+                log.info("[%s] Compaction yapildi: %s",
+                         task_id, _comp_sonuc.get("compaction", {}))
+                sonuc["compaction"] = _comp_sonuc
+        except ImportError:
+            pass  # memory_compaction modulu yoksa sessiz gec
+        except Exception as _comp_e:
+            log.debug("[%s] Compaction kontrol hatasi (sessiz): %s",
+                      task_id, _comp_e)
 
         return sonuc
 
@@ -1696,6 +1737,16 @@ class ConversationLoop:
                 return {"tur": self.tur, "max_tur": self.max_tur}
 
         return _SimpleBudget(self.max_tur)
+
+    # ── Session Search Kaydet ─────────────────────────────────────────
+    def _session_search_kaydet(self, session_id: Optional[str], message: str, role: str = "user") -> None:
+        """Session Search FTS5'e mesaj kaydet (guvenli)."""
+        if not _SESSION_SEARCH_AKTIF or not self._session_search or not session_id or not message:
+            return
+        try:
+            self._session_search.save(session_id, message, role)
+        except Exception as _ss_e:
+            log.debug("[SESSION_SEARCH] Kayit hatasi: %s", _ss_e)
 
     def _hata_cozumle(self, hata_metni: str, kaynak: str = "genel") -> None:
         """Hata aninda Reasoning-Core'u tetikle.
