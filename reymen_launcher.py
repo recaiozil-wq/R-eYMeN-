@@ -27,6 +27,11 @@ _KOK = Path(__file__).parent.resolve()
 os.chdir(_KOK)
 sys.path.insert(0, str(_KOK))
 
+# src/ altindaki reymen paketi icin
+_src = _KOK / "src"
+if _src.exists():
+    sys.path.insert(0, str(_src))
+
 try:
     from dotenv import load_dotenv
     load_dotenv(_KOK / ".env", override=True)
@@ -461,8 +466,8 @@ def _show_version():
 
 # ── Argüman ayrıştırıcı (ReYMeN uyumlu) ─────────────────────────────────────
 def _build_parser():
-    """Parser'ı reymen.cli.build_parser() üzerinden kur, launcher'a özel handler'ları ekle."""
-    from reymen.cli import build_parser as _bp
+    """Parser'ı reymen.console.build_parser() üzerinden kur, launcher'a özel handler'ları ekle."""
+    from reymen.console import build_parser as _bp
 
     p = _bp()
 
@@ -494,6 +499,11 @@ def _build_parser():
         p_start.add_argument("--bot-name", default="all",
                              help="Bot adı (pasa, reymen, kiral38, all)")
         p_start.set_defaults(func=_cmd_start)
+
+    # Update komutu
+    if _sub is not None:
+        p_update = _sub.add_parser("update", help="ReYMeN'i güncelle (git pull + pip install)")
+        p_update.set_defaults(func=_cmd_update)
 
     # Cost handler override (launcher'daki _cmd_cost_alt console.py'ye yönlendirir)
     for action in p._actions:
@@ -590,6 +600,77 @@ def _cmd_status():
     return _cs(_ap.Namespace())
 
 
+# ── update komutu ──────────────────────────────────────────────────────────
+def _cmd_update(args=None):
+    """ReYMeN'i güncelle: git pull + pip install -e ."""
+    import subprocess as _sp
+    import sys as _sys
+
+    print(f"\n  {_c('╔══════════════════════════════════════╗')}")
+    print(f"  {_c('║')}   ReYMeN Güncelleme Başlatılıyor...  {_c('║')}")
+    print(f"  {_c('╚══════════════════════════════════════╝')}\n")
+
+    # 1. Mevcut versiyon — versiyon bilgisini yakalamak için stdout'u yönlendir
+    import io as _io
+    _buf = _io.StringIO()
+    _old_stdout = sys.stdout
+    sys.stdout = _buf
+    _show_version()
+    sys.stdout = _old_stdout
+    _versiyon_once = _buf.getvalue().strip()
+    print(f"  {_d('Mevcut:')} {_versiyon_once}")
+
+    # 2. Git pull
+    print(f"\n  {_y('⟳')} Git çekiliyor...")
+    try:
+        r = _sp.run(["git", "pull"], cwd=_KOK, capture_output=True, text=True, timeout=60)
+        if r.returncode == 0:
+            print(f"  {_g('✓')} Git pull başarılı")
+            if r.stdout.strip():
+                for line in r.stdout.strip().splitlines()[-5:]:
+                    print(f"    {_d(line)}")
+        else:
+            print(f"  {_r('✗')} Git pull hatası:")
+            print(f"    {r.stderr[:200]}")
+            return 1
+    except Exception as e:
+        print(f"  {_r('✗')} Git pull başarısız: {e}")
+        return 1
+
+    # 3. pip install -e .
+    print(f"\n  {_y('⟳')} Bağımlılıklar güncelleniyor...")
+    _pip = _sys.executable.replace("python.exe", "pythonw.exe") if os.name == "nt" else _sys.executable
+    _pip = _sys.executable  # pythonw.exe pip calismaz, normal python kullan
+    try:
+        r = _sp.run(
+            [_sys.executable, "-m", "pip", "install", "-e", str(_KOK), "--quiet"],
+            capture_output=True, text=True, timeout=120
+        )
+        if r.returncode == 0:
+            print(f"  {_g('✓')} Bağımlılıklar güncellendi")
+        else:
+            print(f"  {_y('⚠')} pip uyarısı: {r.stderr[:200]}")
+    except Exception as e:
+        print(f"  {_r('✗')} pip hatası: {e}")
+
+    # 4. Yeni versiyon — versiyon bilgisini yakala
+    _buf2 = _io.StringIO()
+    _old_stdout2 = sys.stdout
+    sys.stdout = _buf2
+    _show_version()
+    sys.stdout = _old_stdout2
+    _versiyon_sonra = _buf2.getvalue().strip()
+    print(f"\n  {_d('Güncel:')} {_versiyon_sonra}")
+
+    # 5. Özet
+    print(f"\n  {_g('✓')} Güncelleme tamamlandı!")
+    print(f"  {_d('Önce:')} {_versiyon_once}")
+    print(f"  {_d('Sonra:')} {_versiyon_sonra}")
+    if _versiyon_once != _versiyon_sonra:
+        print(f"  {_y('⟳')} Sürüm değişti — gateway'leri yeniden başlatmayı unutma!")
+    return 0
+
+
 def _model_sec_interactive():
     """Etkileşimli model seçim ekranı (eski _model_sec ile aynı)."""
     _api_sonuc = _api_kontrol_bekle(timeout=3)
@@ -635,36 +716,36 @@ def main():
     # CLI komutlarini tanı: reymen/cli.py build_parser + launcher özel komutlar
     # Tek kaynak: reymen.cli.build_parser + launcher ekleri (model)
     _LAUNCHER_CMD = {"model", "status", "cost", "gateway", "config",
-                     "session", "doctor", "backup", "cron", "skills",
-                     "plugins", "tools", "setup", "profile", "logs",
-                     "mcp"}
+                         "session", "doctor", "backup", "cron", "skills",
+                         "plugins", "tools", "setup", "profile", "logs",
+                         "mcp", "update"}
 
     # Argümanları parse et
     parser = _build_parser()
     args = parser.parse_args()
 
     # -V / --version
-    if args.version:
+    if getattr(args, 'version', False):
         return _show_version()
 
     # -m / --model override
-    if args.model:
+    if getattr(args, 'model', False):
         _model_guncelle(
             args.provider or os.environ.get("REYMEN_PROVIDER", "deepseek"),
             args.model,
         )
 
     # --provider override (model yoksa da çalışır)
-    if args.provider and not args.model:
+    if getattr(args, 'provider', None) and not getattr(args, 'model', None):
         cur_m = os.environ.get("REYMEN_MODEL", "deepseek-v4-flash")
         _model_guncelle(args.provider, cur_m)
 
     # -z / --oneshot: banner yok, direkt cevap
-    if args.oneshot:
+    if getattr(args, 'oneshot', None):
         return _oneshot(args.oneshot)
 
     # Alt komutlar
-    if args.command:
+    if getattr(args, 'command', None):
         if args.command == "model":
             return _model_sec_interactive()
         if args.command == "status":
