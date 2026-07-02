@@ -18,8 +18,17 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 from datetime import datetime
 from typing import Any
+
+# Rules Engine CLI
+try:
+    from reymen.sistem.kurallar import cmd_kural
+except ImportError:
+    def cmd_kural(args) -> int:
+        print("[HATA] Rules Engine modulu yuklenemedi (reymen.sistem.kurallar)")
+        return 1
 
 
 def print_json(data: Any) -> None:
@@ -259,6 +268,159 @@ def cmd_auth(args: argparse.Namespace) -> int:
         return 0
 
 
+# ── A2A/ACP ────────────────────────────────────────────────────────────────────
+def cmd_a2a(args: argparse.Namespace) -> int:
+    """A2A/ACP protokol yönetimi.
+
+    Kullanım:
+        reymen a2a status         → A2A/ACP durumu
+        reymen a2a start          → ACP sunucusunu başlat (stdio)
+        reymen a2a stop           → ACP sunucusunu durdur
+        reymen a2a card list      → Agent Card'ları listele
+        reymen a2a card register  → Agent Card kaydet
+        reymen a2a task list      → Devredilen görevleri listele
+        reymen a2a task delegate  → Görev devret
+        reymen a2a skill transfer → Beceri aktar
+        reymen a2a stats          → İstatistikler
+    """
+    alt = getattr(args, "a2a_sub", None) or "status"
+
+    # Önce ACP modülünü yükle
+    try:
+        from reymen.a2a_acp import (
+            ACPServer, AgentCard, _ACP_SERVER_INSTANCE,
+        )
+        _acp_loaded = True
+    except ImportError as e:
+        print(f"[HATA] A2A/ACP modulu yuklenemedi: {e}")
+        return 1
+
+    if alt == "status":
+        if _ACP_SERVER_INSTANCE and _ACP_SERVER_INSTANCE.running:
+            s = _ACP_SERVER_INSTANCE
+            print(f"  ACP Sunucu: 🟢 AKTIF")
+            print(f"  Transport:  {s.transport}")
+            print(f"  Agentler:   {s._card_registry.count()}")
+            print(f"  Gorevler:   {s._delegation.stats()['total']}")
+            print(f"  Calisma:    {time.time() - s._start_time:.0f}s")
+        else:
+            print(f"  ACP Sunucu: 🔴 KAPALI")
+            print(f"  (ACP_BASLAT ile baslat veya 'reymen a2a start')")
+        return 0
+
+    if alt == "start":
+        transport = getattr(args, "transport", "stdio")
+        port = getattr(args, "port", 9200)
+        try:
+            server = ACPServer(transport=transport, host="127.0.0.1", port=port)
+            server.start_threaded()
+            time.sleep(0.2)
+            print(f"  ✅ ACP sunucusu baslatildi ({transport})")
+            return 0
+        except Exception as e:
+            print(f"  ❌ Baslatma hatasi: {e}")
+            return 1
+
+    if alt == "stop":
+        if _ACP_SERVER_INSTANCE and _ACP_SERVER_INSTANCE.running:
+            _ACP_SERVER_INSTANCE.stop()
+            print("  ✅ ACP sunucusu durduruldu")
+        else:
+            print("  ℹ️  ACP sunucusu zaten kapali")
+        return 0
+
+    if alt in ("card",):
+        card_sub = getattr(args, "card_sub", "list")
+        if card_sub == "list":
+            if not _ACP_SERVER_INSTANCE or not _ACP_SERVER_INSTANCE.running:
+                print("  ℹ️  ACP sunucusu calismiyor")
+                return 0
+            cards = _ACP_SERVER_INSTANCE._card_registry.list()
+            if not cards:
+                print("  Kayitli agent yok.")
+                return 0
+            print(f"  Kayitli Agent'lar ({len(cards)}):")
+            for c in cards:
+                caps = ", ".join(c.capabilities[:4])
+                print(f"    🆔 {c.agent_id}")
+                print(f"       İsim: {c.name or '-'}")
+                print(f"       Yetenek: {caps or '-'}")
+                print(f"       Beceri: {len(c.skills)} adet")
+            return 0
+        elif card_sub == "register":
+            agent_id = getattr(args, "agent_id", None)
+            if not agent_id:
+                print("  ❌ agent_id gerekli")
+                return 1
+            if not _ACP_SERVER_INSTANCE or not _ACP_SERVER_INSTANCE.running:
+                print("  ❌ ACP sunucusu calismiyor. Once 'reymen a2a start'")
+                return 1
+            caps_str = getattr(args, "capabilities", "messaging")
+            skills_str = getattr(args, "skills", "")
+            card = AgentCard(
+                agent_id=agent_id,
+                name=getattr(args, "name", agent_id),
+                capabilities=[c.strip() for c in caps_str.split(",") if c.strip()],
+                skills=[s.strip() for s in skills_str.split(",") if s.strip()],
+            )
+            _ACP_SERVER_INSTANCE._card_registry.register(card)
+            print(f"  ✅ Card kaydedildi: {agent_id}")
+            return 0
+
+    if alt == "task":
+        task_sub = getattr(args, "task_sub", "list")
+        if task_sub == "list":
+            if not _ACP_SERVER_INSTANCE or not _ACP_SERVER_INSTANCE.running:
+                print("  ℹ️  ACP sunucusu calismiyor")
+                return 0
+            tasks = _ACP_SERVER_INSTANCE._delegation.list_tasks(
+                agent_id=getattr(args, "agent_id", None),
+                status=getattr(args, "task_status", None),
+            )
+            if not tasks:
+                print("  Gorev yok.")
+                return 0
+            print(f"  Gorevler ({len(tasks)}):")
+            for t in tasks:
+                print(f"    📋 {t.task_id[:12]} | {t.title[:40]:<42} | {t.status:<12}")
+            return 0
+        elif task_sub == "delegate":
+            if not _ACP_SERVER_INSTANCE or not _ACP_SERVER_INSTANCE.running:
+                print("  ❌ ACP sunucusu calismiyor")
+                return 1
+            source = getattr(args, "source", "reymen")
+            target = getattr(args, "target", "")
+            title = getattr(args, "title", "")
+            if not target or not title:
+                print("  ❌ target ve title gerekli")
+                return 1
+            task = _ACP_SERVER_INSTANCE._delegation.delegate(
+                source=source, target=target, title=title,
+                description=getattr(args, "description", ""),
+            )
+            print(f"  ✅ Gorev devredildi: {task.task_id}")
+            print(f"     {source} -> {target}: {title}")
+            return 0
+
+    if alt == "stats":
+        if not _ACP_SERVER_INSTANCE or not _ACP_SERVER_INSTANCE.running:
+            print("  ℹ️  ACP sunucusu calismiyor")
+            return 0
+        s = _ACP_SERVER_INSTANCE
+        del_stats = s._delegation.stats()
+        print(f"  ACP Istatistikleri:")
+        print(f"    Agent Sayisi:  {s._card_registry.count()}")
+        print(f"    Toplam Gorev:  {del_stats['total']}")
+        print(f"    Tamamlanan:    {del_stats['completed']}")
+        print(f"    Bekleyen:      {del_stats['pending']}")
+        print(f"    Basarisiz:     {del_stats['failed']}")
+        print(f"    Reddedilen:    {del_stats['rejected']}")
+        return 0
+
+    print(f"  ❌ Bilinmeyen a2a alt komutu: {alt}")
+    return 1
+
+
 # ---------------------------------------------------------------------------
 # Parser (ReYMeN'teki _parser.py karşılığı)
 # ---------------------------------------------------------------------------
@@ -328,6 +490,69 @@ def build_parser() -> argparse.ArgumentParser:
     p_auth_key.add_argument("key_value", help="Doğrulanacak API anahtarı")
     p_auth_sub.add_parser("cleanup", help="Süresi dolmuş token'ları temizle")
     p_auth.set_defaults(func=cmd_auth)
+
+    # a2a/ACP
+    p_a2a = sub.add_parser("a2a", help="📡 A2A/ACP protokol yönetimi (Agent Card, görev devretme, beceri aktarımı)")
+
+    # kural (Rules Engine)
+    p_kural = sub.add_parser("kural", help="📋 Kural/izin yönetimi (Rules Engine)")
+    p_kural_sub = p_kural.add_subparsers(dest="kural_sub")
+    p_kural_list = p_kural_sub.add_parser("list", help="Kuralları listele")
+    p_kural_list.add_argument("--kategori", choices=["dosya_erisim", "ag", "komut", "api_cagrisi", "guvenlik"],
+                               help="Kategori filtresi")
+    p_kural_list.add_argument("--tip", choices=["izin", "engel", "uyari"], help="Kural tipi filtresi")
+    p_kural_list.add_argument("--aktif", action="store_true", help="Sadece aktif kurallar")
+    p_kural_ekle = p_kural_sub.add_parser("ekle", help="Yeni kural ekle")
+    p_kural_ekle.add_argument("kategori", choices=["dosya_erisim", "ag", "komut", "api_cagrisi", "guvenlik"],
+                               help="Kural kategorisi")
+    p_kural_ekle.add_argument("tip", choices=["izin", "engel", "uyari"], help="Kural tipi")
+    p_kural_ekle.add_argument("desen", help="Eşleşme deseni (wildcard veya re: ile regex)")
+    p_kural_ekle.add_argument("--sebep", "-s", default="", help="Kural açıklaması")
+    p_kural_ekle.add_argument("--id", default=None, help="Kural ID'si (opsiyonel)")
+    p_kural_sil = p_kural_sub.add_parser("sil", help="Kural sil")
+    p_kural_sil.add_argument("kural_id", help="Silinecek kural ID'si")
+    p_kural_kontrol = p_kural_sub.add_parser("kontrol", help="Bir hedefi kurallara göre kontrol et")
+    p_kural_kontrol.add_argument("kategori", choices=["dosya_erisim", "ag", "komut", "api_cagrisi", "guvenlik"],
+                                  help="Kontrol kategorisi")
+    p_kural_kontrol.add_argument("hedef", help="Kontrol edilecek hedef (dosya yolu, komut, URL vb.)")
+    p_kural.set_defaults(func=cmd_kural)
+    p_a2a_sub = p_a2a.add_subparsers(dest="a2a_sub")
+    p_a2a_sub.add_parser("status", help="A2A/ACP durumu")
+    p_a2a_start = p_a2a_sub.add_parser("start", help="ACP sunucusunu başlat")
+    p_a2a_start.add_argument("--transport", default="stdio", choices=["stdio", "socket"],
+                             help="Taşıma protokolü (varsayılan: stdio)")
+    p_a2a_start.add_argument("--port", type=int, default=9200,
+                             help="Socket port (transport=socket ise, varsayılan: 9200)")
+    p_a2a_sub.add_parser("stop", help="ACP sunucusunu durdur")
+
+    # card alt komutları
+    p_card = p_a2a_sub.add_parser("card", help="Agent Card yönetimi")
+    p_card_sub = p_card.add_subparsers(dest="card_sub")
+    p_card_sub.add_parser("list", help="Agent Card'ları listele")
+    p_card_reg = p_card_sub.add_parser("register", help="Agent Card kaydet")
+    p_card_reg.add_argument("agent_id", help="Benzersiz agent ID")
+    p_card_reg.add_argument("--name", default="", help="Gösterim adı")
+    p_card_reg.add_argument("--capabilities", default="messaging",
+                            help="Yetenek listesi (virgülle ayrılmış)")
+    p_card_reg.add_argument("--skills", default="", help="Beceri listesi (virgülle ayrılmış)")
+    p_card.set_defaults(card_sub="list")
+
+    # task alt komutları
+    p_task = p_a2a_sub.add_parser("task", help="Görev devretme yönetimi")
+    p_task_sub = p_task.add_subparsers(dest="task_sub")
+    p_task_list = p_task_sub.add_parser("list", help="Devredilen görevleri listele")
+    p_task_list.add_argument("--agent-id", help="Agent ID filtresi")
+    p_task_list.add_argument("--status", dest="task_status",
+                              help="Durum filtresi (pending/accepted/completed/failed)")
+    p_task_del = p_task_sub.add_parser("delegate", help="Yeni görev devret")
+    p_task_del.add_argument("target", help="Hedef agent ID")
+    p_task_del.add_argument("title", help="Görev başlığı")
+    p_task_del.add_argument("--source", default="reymen", help="Kaynak agent ID (varsayılan: reymen)")
+    p_task_del.add_argument("--description", default="", help="Görev açıklaması")
+    p_task.set_defaults(task_sub="list")
+
+    p_a2a_sub.add_parser("stats", help="ACP istatistikleri")
+    p_a2a.set_defaults(func=cmd_a2a)
 
     return parser
 

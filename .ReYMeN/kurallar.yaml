@@ -1,0 +1,44 @@
+rules:
+- aktif: true
+  desen: '**/etc/shadow'
+  id: builtin-kritik-dosya
+  kategori: dosya_erisim
+  sebep: Kritik sistem dosyasi (shadow)
+  tip: engel
+- aktif: true
+  desen: '**/etc/passwd'
+  id: builtin-kritik-dosya-passwd
+  kategori: dosya_erisim
+  sebep: Kritik sistem dosyasi (passwd)
+  tip: engel
+- aktif: true
+  desen: '**/.env'
+  id: builtin-kritik-env
+  kategori: dosya_erisim
+  sebep: .env dosyasi API anahtarlari icerir
+  tip: engel
+- aktif: true
+  desen: rm -rf /
+  id: builtin-silme-korumali
+  kategori: komut
+  sebep: Tum sistemi silme komutu
+  tip: uyari
+- aktif: true
+  desen: api.deepseek.com
+  id: builtin-ag-disari
+  kategori: ag
+  sebep: DeepSeek API erisimi
+  tip: izin
+- aktif: true
+  desen: openrouter.ai
+  id: builtin-ag-openrouter
+  kategori: ag
+  sebep: OpenRouter API erisimi
+  tip: izin
+- aktif: true
+  desen: malware.exe
+  id: kural-e301d4af
+  kategori: guvenlik
+  olusturma: '2026-07-02T20:59:28.572030'
+  sebep: Zararli yazilim
+  tip: engel

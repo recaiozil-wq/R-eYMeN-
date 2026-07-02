@@ -184,6 +184,16 @@ except ImportError:
     _hafizada_ara = None
     _ONCE_HAFIZA_AKTIF = False
 
+# ── Rules Engine (Kural/izin yonetimi) ──────────────────────────
+try:
+    from reymen.sistem.kurallar import RulesEngine as _RulesEngine, engine_al as _rules_engine_al
+    _RULES_ENGINE = _rules_engine_al()
+    _RULES_AKTIF = True
+    log.info("[Rules] Kural motoru aktif (%d kural)", _RULES_ENGINE.kural_sayisi)
+except ImportError:
+    _RULES_ENGINE = None
+    _RULES_AKTIF = False
+
 # ── Skill Activator (auto-activation) ────────────────────────────
 try:
     from reymen.cereyan.skill_activator import SkillActivator as _SkillActivator
@@ -356,6 +366,27 @@ except ImportError:
     _MCP_TOOL_AKTIF = False
 
 _MCP_AKTIF = _MCP_NATIVE_AKTIF or _MCP_CLIENT_AKTIF or _MCP_CATALOG_AKTIF or _MCP_TOOL_AKTIF
+
+# ── Framework Adaptörleri (LangGraph / CrewAI / AutoGen) ─────────────
+try:
+    from reymen.arac.framework_adaptor import (
+        FrameworkYonetici as _FrameworkYonetici,
+        framework_adaptor as _framework_adaptor,
+        framework_adaptor_durum as _framework_adaptor_durum,
+    )
+    _FRAMEWORK_ADAPTOR_AKTIF = True
+    _framework_aktif_fw = _framework_adaptor.aktif_frameworkler
+    # Log active frameworks (once only)
+    _aktif_liste = [ad for ad, aktif in _framework_aktif_fw.items() if aktif]
+    if _aktif_liste:
+        log.info("[Framework] Adaptor aktif: %s", ", ".join(_aktif_liste))
+    else:
+        log.debug("[Framework] Adaptor yuklu ama hic framework kurulu degil")
+except ImportError:
+    _FrameworkYonetici = None
+    _framework_adaptor = None
+    _framework_adaptor_durum = None
+    _FRAMEWORK_ADAPTOR_AKTIF = False
 
 # ── Reasoning-Core (akil yurutme motoru) ──────────────────────────────
 try:
@@ -932,6 +963,29 @@ class ConversationLoop:
 
             # API cagrisi (ReYMeN pattern: retry + fallback ile)
             api_yanit = None
+
+            # ── Rules Engine: API cagrisi kontrolu ─────────────────────
+            if _RULES_AKTIF and _RULES_ENGINE is not None:
+                try:
+                    import re as _re
+                    # Provider/model adini bul
+                    provider_info = provider_tipi or provider or "bilinmiyor"
+                    api_hedef = f"llm_call:{provider_info}"
+                    # Son kullanici mesajindan kisa bir kesit al
+                    if messages and len(messages) > 1:
+                        son_mesaj = str(messages[-1].get("content", ""))[:100]
+                        if son_mesaj:
+                            api_hedef = f"{api_hedef} {son_mesaj}"
+                    kural_sonuc = _RULES_ENGINE.kontrol("api_cagrisi", api_hedef)
+                    if not kural_sonuc.get("izin"):
+                        log.warning("[%s] [Rules] API cagrisi ENGELLENDI: %s", task_id, kural_sonuc.get("sebep", ""))
+                        sonuc["hata"] = f"API cagrisi engellendi: {kural_sonuc.get('sebep', '')}"
+                        sonuc["kural"] = kural_sonuc
+                        budget.tur_bitir(basarili=False)
+                        break
+                except Exception as _re:
+                    log.debug("[%s] [Rules] API kontrol hatasi (sessiz): %s", task_id, _re)
+
             # Plugin: pre_llm_call — mesajları değiştirme şansı
             try:
                 if _PLUGIN_AKTIF and _PLUGIN_SISTEMI is not None:
@@ -1889,10 +1943,31 @@ class ConversationLoop:
                 try:
                     agents = self._agents_bilgisi_al()
                     if agents:
-                        ek_bilgi += "\\n" + agents
+                        ek_bilgi += "\\\\n" + agents
                 except Exception as _e:
                     __import__("logging").getLogger(__name__).warning(
                         "[SessizExcept] %%s: %%s", type(_e).__name__, _e
+                    )
+
+                # ═══════════════════════════════════════════════════════
+                # Framework Adaptör Durumu (LangGraph / CrewAI / AutoGen)
+                # ═══════════════════════════════════════════════════════
+                try:
+                    if _FRAMEWORK_ADAPTOR_AKTIF and _framework_adaptor:
+                        fw_durum = _framework_adaptor.aktif_frameworkler
+                        aktif_fw = [ad for ad, aktif in fw_durum.items() if aktif]
+                        pasif_fw = [ad for ad, aktif in fw_durum.items() if not aktif]
+                        fw_info = (
+                            "\n\n[FRAMEWORK ADAPTORLERI]\n"
+                            f"Aktif ({len(aktif_fw)}): {', '.join(aktif_fw) if aktif_fw else 'YOK'}\n"
+                            f"Pasif ({len(pasif_fw)}): {', '.join(pasif_fw) if pasif_fw else 'YOK'}\n"
+                            "Kullanim: Soz dizisi icinde belirt. Ornegin "
+                            "'LangGraph ile is akisi olustur' veya 'CrewAI ile ekip calistir'.\n"
+                        )
+                        ek_bilgi += fw_info
+                except Exception as _e:
+                    __import__("logging").getLogger(__name__).warning(
+                        "[SessizExcept] Framework adaptor: %%s", type(_e).__name__
                     )
 
                 # ═══════════════════════════════════════════════════════
@@ -2425,6 +2500,46 @@ class ConversationLoop:
                 parametreler = json.loads(parametreler)
             except Exception:
                 parametreler = {}
+
+        # ── Rules Engine kontrolu (her aksiyon oncesi) ────────────
+        if _RULES_AKTIF and _RULES_ENGINE is not None:
+            try:
+                # Arac adina gore kategori belirle
+                kategori = "komut"
+                arac_lower = arac.lower()
+                if any(k in arac_lower for k in ["oku", "yaz", "sil", "dosya", "file", "read", "write", "path"]):
+                    kategori = "dosya_erisim"
+                elif any(k in arac_lower for k in ["web", "http", "api", "curl", "get", "post", "fetch", "download"]):
+                    kategori = "ag"
+                elif any(k in arac_lower for k in ["terminal", "bash", "sh", "cmd", "komut", "run", "exec", "shell"]):
+                    kategori = "komut"
+                elif any(k in arac_lower for k in ["llm", "beyin", "model", "provider", "ai"]):
+                    kategori = "api_cagrisi"
+                
+                # Hedef olarak arac adi + parametreleri kullan
+                hedef_str = arac
+                if parametreler:
+                    import json as _json
+                    try:
+                        param_str = _json.dumps(parametreler, ensure_ascii=False)
+                        hedef_str = f"{arac} {param_str[:200]}"
+                    except Exception:
+                        hedef_str = f"{arac} {str(parametreler)[:200]}"
+                
+                kural_sonuc = _RULES_ENGINE.kontrol(kategori, hedef_str)
+                if not kural_sonuc.get("izin"):
+                    log.warning("[Rules] ENGEL: %s (%s) — %s", arac, kategori, kural_sonuc.get("sebep", ""))
+                    return {
+                        "basarili": False,
+                        "cikti": f"[ENGELLENDI] {kural_sonuc.get('sebep', 'Kural ihlali')}",
+                        "tamamlandi": False,
+                        "hata": f"Kural engeli: {kural_sonuc.get('sebep', '')}",
+                        "kural": kural_sonuc,
+                    }
+                elif kural_sonuc.get("tip") == "uyari":
+                    log.info("[Rules] UYARI: %s (%s) — %s", arac, kategori, kural_sonuc.get("sebep", ""))
+            except Exception as _re:
+                log.debug("[Rules] Kontrol hatasi (sessiz): %s", _re)
 
         # Internal tool'lari dogrudan calistir (motor gerekmez)
         if arac == "web_ara":
@@ -2999,6 +3114,56 @@ class ConversationLoop:
         except Exception as e:
             return f"HATA: {e}"
 
+    # ══════════════════════════════════════════════════════════════════
+    # FRAMEWORK ADAPTOR (LangGraph / CrewAI / AutoGen)
+    # ══════════════════════════════════════════════════════════════════
+
+    def _framework_calistir(self, framework: str, **kwargs) -> Dict[str, Any]:
+        """Framework adaptorunu kullanarak islem yap.
+
+        Args:
+            framework: 'langgraph' | 'crewai' | 'autogen'
+            **kwargs: Framework'e ozgu parametreler
+
+        Returns:
+            dict: Islem sonucu
+        """
+        try:
+            if not _FRAMEWORK_ADAPTOR_AKTIF or not _framework_adaptor:
+                return {"hata": "Framework adaptor yuklu degil", "sonuc": None}
+
+            fw = framework.lower().strip()
+            if fw == "langgraph":
+                return _framework_adaptor.langgraph_calistir(
+                    kwargs.get("graph"),
+                    kwargs.get("inputs"),
+                    kwargs.get("config"),
+                )
+            elif fw == "crewai":
+                return _framework_adaptor.crewai_calistir(
+                    kwargs.get("crew"),
+                    kwargs.get("inputs"),
+                )
+            elif fw == "autogen":
+                return _framework_adaptor.autogen_agent_calistir(
+                    kwargs.get("agent"),
+                    kwargs.get("mesaj", ""),
+                )
+            else:
+                return {"hata": f"Bilinmeyen framework: {fw}", "sonuc": None}
+        except Exception as e:
+            logger.error("[Framework] Calistirma hatasi: %s", e)
+            return {"hata": str(e), "sonuc": None}
+
+    def _framework_durum(self) -> Dict[str, bool]:
+        """Framework adaptor durumunu don."""
+        try:
+            if _FRAMEWORK_ADAPTOR_AKTIF and _framework_adaptor:
+                return _framework_adaptor.aktif_frameworkler
+        except Exception:
+            pass
+        return {"langgraph": False, "crewai": False, "autogen": False}
+
 
 # ── CLI girdi noktasi ─────────────────────────────────────────────────
 
@@ -3046,6 +3211,36 @@ def motor_kaydet(motor) -> None:
             "Parametre: hedef (soru metni), provider (deepseek/xiaomi/xai/openrouter/...). "
             "OnceHafiza + web arama + cache + DeepSeek karsilastirmasi yapar."
         )
+
+        # Framework adaptor araclari (opsiyonel)
+        try:
+            if _FRAMEWORK_ADAPTOR_AKTIF and _framework_adaptor:
+                fw_durum = _framework_adaptor.aktif_frameworkler
+
+                if fw_durum.get("langgraph"):
+                    motor._plugin_arac_kaydet(
+                        "LANGGRAPH_CALISTIR",
+                        lambda g, i=None, c=None: _framework_adaptor.langgraph_calistir(g, i, c),
+                        "LangGraph StateGraph calistir. Parametre: g=graph, i=inputs(dict), c=config(dict)."
+                    )
+
+                if fw_durum.get("crewai"):
+                    motor._plugin_arac_kaydet(
+                        "CREWAI_CALISTIR",
+                        lambda c, i=None: _framework_adaptor.crewai_calistir(c, i),
+                        "CrewAI Crew calistir. Parametre: c=crew, i=inputs(dict)."
+                    )
+
+                if fw_durum.get("autogen"):
+                    motor._plugin_arac_kaydet(
+                        "AUTOGEN_CALISTIR",
+                        lambda a, m="": _framework_adaptor.autogen_agent_calistir(a, m),
+                        "AutoGen agent calistir. Parametre: a=agent, m=mesaj(str)."
+                    )
+        except Exception as _e:
+            __import__("logging").getLogger(__name__).warning(
+                "[SessizExcept] Framework tool kayit: %%s", type(_e).__name__
+            )
     except Exception as _e:
         __import__("logging").getLogger(__name__).warning(
             "[SessizExcept] %%s: %%s", type(_e).__name__, _e

@@ -99,7 +99,8 @@ log_streamer = LogStreamer(LOG_DOSYASI)
 
 AUTH_ATLANACAK = {"/auth/", "/login", "/static", "/ws/logs",
                   "/api/health", "/docs", "/openapi.json", "/redoc",
-                  "/api/auth/providers", "/api/cron"}
+                  "/api/auth/providers", "/api/cron",
+                  "/image-gen"}
 
 
 @app.middleware("http")
@@ -3615,3 +3616,10 @@ async def v1_chat_completions(req: V1ChatRequest):
             {"error": {"message": str(e), "type": "server_error"}},
             status_code=500,
         )
+
+
+# ═══════════════════════════════════════════════════════════════
+# Image Gen Route (web_ui/image_gen_route.py)
+# ═══════════════════════════════════════════════════════════════
+from src.reymen.web_ui.image_gen_route import router as image_gen_router
+app.include_router(image_gen_router)

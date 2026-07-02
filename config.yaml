@@ -224,18 +224,32 @@ kurulum_tamamlandi: false
 # Token süreleri saniye cinsinden.
 auth:
   enabled: true
-  jwt_secret_env: REYMEN_JWT_SECRET       # JWT imzalama anahtarı (.env'den okunur)
-  token_expiry: 3600                       # Access token süresi (1 saat)
-  refresh_expiry: 86400                    # Refresh token süresi (24 saat)
-  storage_path: .ReYMeN/auth/auth.db      # SQLite veritabanı yolu
-  default_role: user                       # Varsayılan kullanıcı rolü
-  multi_user: true                         # Çoklu kullanıcı desteği
-  api_key_validation: true                 # API key format doğrulama
-  live_key_check: false                    # Canlı API key doğrulama (network)
-  providers:                              # Desteklenen API provider'ları
+  jwt_secret_env: REYMEN_JWT_SECRET       # JWT imzalama anahtari (.env'den okunur)
+  token_expiry: 3600                       # Access token suresi (1 saat)
+  refresh_expiry: 86400                    # Refresh token suresi (24 saat)
+  storage_path: .ReYMeN/auth/auth.db      # SQLite veritabani yolu
+  default_role: user                       # Varsayilan kullanici rolu
+  multi_user: true                         # Coklu kullanici destegi
+  api_key_validation: true                 # API key format dogrulama
+  live_key_check: false                    # Canli API key dogrulama (network)
+  providers:                              # Desteklenen API provider'lari
     - deepseek
     - openai
     - anthropic
     - openrouter
     - xai
     - groq
+
+# ── Rules Engine (Kural/izin yonetimi) ───────────────────────────────
+# Mevcut guvenlik/ modullerinin uzerine policy katmani.
+# Her aksiyon (dosya erisimi, ag, komut, API cagrisi) oncesinde
+# .ReYMeN/kurallar.yaml dosyasindaki kurallar kontrol edilir.
+# Modlar:
+#   enabled: true   → Kural motoru aktif (her aksiyon kontrol edilir)
+#   enabled: false  → Kural motoru pasif (tum aksiyonlara izin verilir)
+# Kategoriler: dosya_erisim, ag, komut, api_cagrisi, guvenlik
+# Kural tipleri: izin, engel, uyari
+rules:
+  enabled: true
+  strict_mode: false      # true = uyari da engel gibi davranir
+  log_level: info         # debug / info / warning

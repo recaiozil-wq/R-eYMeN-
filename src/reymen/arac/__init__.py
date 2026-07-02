@@ -12,6 +12,20 @@ from src.reymen.arac.image_gen_engine import (
     xAIEngine,
 )
 
+# Framework adaptor (opsiyonel)
+try:
+    from src.reymen.arac.framework_adaptor import (
+        FrameworkYonetici,
+        framework_adaptor,
+        LangGraphAdaptor,
+        CrewAIAdaptor,
+        AutoGenAdaptor,
+        framework_adaptor_durum,
+    )
+    _FRAMEWORK_ADAPTOR_MEVCUT = True
+except ImportError:
+    _FRAMEWORK_ADAPTOR_MEVCUT = False
+
 __all__ = [
     # Engine'ler
     "ImageGenEngine",
@@ -24,4 +38,11 @@ __all__ = [
     "resim_olustur",
     "image_gen_engine_listele",
     "motor_kaydet",
+    # Framework adaptor
+    "FrameworkYonetici",
+    "framework_adaptor",
+    "LangGraphAdaptor",
+    "CrewAIAdaptor",
+    "AutoGenAdaptor",
+    "framework_adaptor_durum",
 ]

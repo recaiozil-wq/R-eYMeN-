@@ -506,6 +506,8 @@ class Motor:
             "reymen.a2a_transport",
             # A2A Distributed (config + otomatik baglanti)
             "reymen.a2a_distributed",
+            # A2A/ACP (Agent Card, Skill Transfer, Task Delegation)
+            "reymen.a2a_acp",
             # Gateway Sistemi (P1) — Çoklu platform gateway
             "reymen.ag.gateway_temel",
             "reymen.ag.salted_gateway",
