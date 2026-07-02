@@ -39,7 +39,57 @@ ReYMeN is a self-contained, open-source AI agent framework. It runs on its own i
 ### Automation & Maintenance
 - ⏰ **Cron Scheduler** — Built-in cron with no_agent watchdog mode
 - 🩺 **Proactive Bakim** — 8-point health check every 30min (config drift, gateway watchdog, SOUL sync, state.db prune, memory sync, weekly report, config validation, gateway health)
-- 🛡️ **Startup VBS** — Reboot-proof auto-start for all bots
+| 🛡️ **Startup VBS** — Reboot-proof auto-start for all bots
+
+## Architecture
+
+### 3 Bot — Single Center
+
+```mermaid
+flowchart TD
+    subgraph Central["☝️ Tek Merkez"]
+        D[durum.json<br/>Tek Kaynak]
+        C[config.yaml<br/>Ortak Ayar]
+        S[SOUL.md<br/>Aynı Kişilik]
+        M[(shared_memories<br/>Aynı Hafıza)]
+    end
+
+    subgraph Bots["👥 3 Bot"]
+        P1[🐦 @Pasa_38_bot<br/>default profil]
+        P2[🤖 @ReYMeN_ReYMeNbot<br/>reymen profil]
+        P3[🔑 @Kiral38bot<br/>kiral38 profil]
+    end
+
+    subgraph Output["📤 Çıktı"]
+        R[✅ Aynı cevap<br/>Aynı yetki<br/>Aynı kişilik]
+    end
+
+    D --> P1 & P2 & P3
+    C --> P1 & P2 & P3
+    S --> P1 & P2 & P3
+    M --> P1 & P2 & P3
+    
+    P1 & P2 & P3 --> Output
+```
+
+### Reasoning Core — Closed Learning Loop
+
+```mermaid
+flowchart LR
+    Start[⚡ Hata oluştu] --> Hash[🔍 Soyut imza çıkar<br/>path + satır + değer → SHA256]
+    Hash --> Check{💾 Hafızada var mı?}
+    Check -->|Evet| Load[📂 Cozumu yükle<br/>basari_sayisi + cozum]
+    Load --> Apply[⚙️ Uygula]
+    Apply --> Success{✅ Başarılı?}
+    Check -->|Hayır| LLM[🧠 LLM'e sor<br/>DeepSeek / Ornith-1.0]
+    LLM --> Generate[✏️ Çözüm üret]
+    Generate --> Apply
+    Success -->|Evet| Save[💿 Cozumu kaydet<br/>SQLite + TTL=30gün]
+    Success -->|Hayır| Retry{🔄 3 deneme?}
+    Retry -->|Hayır| LLM
+    Retry -->|Evet| Report[📝 Raporla<br/>insan mudahalesi]
+    Save --> End[✅ Bir daha aynı hata olmaz]
+```
 
 ## Quick Start
 

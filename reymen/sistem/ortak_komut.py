@@ -5,13 +5,28 @@ Her degisiklikte otomatik guncellenir. Tum botlar burayi okur.
 """
 
 import json
-import os
-from pathlib import Path
 import logging
+import os
+import re
+import sqlite3
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+import requests
+
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+
+from reymen.sistem.db_config import DB
+
 logger = logging.getLogger(__name__)
 
 PROJE_KOK = Path(__file__).resolve().parent.parent.parent
 HERMES_HOME = Path.home() / ".hermes"
+
+# ── Reasoning-Core sağlayıcı adı (config.yaml > fallback_providers'ta aranır)
+_REASONING_PROVIDER_ADI = "reasoning-core"
 
 # ── Bot Profil Yapilari ────────────────────────────────────────────────
 
@@ -98,8 +113,7 @@ def tara_profil(profil: str) -> dict:
     if config_yol and config_yol.exists():
         icerik = config_yol.read_text(encoding="utf-8")
         # Browser durumu: disabled_toolsets listesinde "browser" var mi?
-        import re as _re
-        dt_match = _re.search(r'disabled_toolsets\s*:\s*\[(.*?)\]', icerik, _re.DOTALL)
+        dt_match = re.search(r'disabled_toolsets\s*:\s*\[(.*?)\]', icerik, re.DOTALL)
         if dt_match:
             tools = [t.strip().strip("'\"") for t in dt_match.group(1).split(",") if t.strip()]
             sonuc["browser"] = "kapali" if "browser" in tools else "acik"
@@ -116,7 +130,7 @@ def tara_profil(profil: str) -> dict:
 
 def guncelle() -> dict:
     """Tum profilleri tara, BOTLAR'i guncelle, durum.json'a yaz.
-    
+
     Dinamik olarak eklenen botlari (yeni kullanicinin kendi botu gibi)
     korur — sadece hardcoded BOTLAR'daki botlari degil, durum.json'da
     zaten kayitli olan tum botlari muhafaza eder.
@@ -209,46 +223,7 @@ def _butun_botlar_esit_mi() -> dict:
     }
 
 
-# ── CLI ─────────────────────────────────────────────────────────────────
-
-if __name__ == "__main__":
-    import sys
-    if len(sys.argv) > 1 and sys.argv[1] == "tara":
-        for ad in BOTLAR:
-            d = tara_profil(BOTLAR[ad]["profil"])
-            print(f"{ad}: SOUL={d['soul_boyut']}b, Browser={d['browser']}, CWD={d['terminal_cwd']}")
-    elif len(sys.argv) > 1 and sys.argv[1] == "guncelle":
-        sonuc = guncelle()
-        print(f"✅ durum.json guncellendi. Botlar esit mi: {sonuc['esit_mi']['esit']}")
-    else:
-        print("Kullanim: python ortak_komut.py [tara|guncelle]")
-# ════════════════════════════════════════════════════════════════════
-# AŞAĞIDAKİ BLOK reymen/sistem/ortak_komut.py DOSYASININ SONUNA EKLENECEK
-# ════════════════════════════════════════════════════════════════════
-#
-# NOT: ortak_komut.py'nin mevcut içeriği elimde değildi (zip'te yoktu),
-# bu yüzden bu blok var olan importlarla çakışmayacak şekilde kendi
-# import'larını kendi taşıyor. Dosyayı elle eklerken proje kökünde
-# zaten tanımlıysa aşağıdaki tekrar eden import'ları (json, sqlite3,
-# time, logging, requests) silip dosyanın başındaki mevcut bloğa
-# taşıyabilirsin — davranış değişmez.
-
-import json
-import logging
-import sqlite3
-import time
-from datetime import datetime, timezone
-
-import requests
-
-from reymen.sistem.db_config import DB
-
-logger = logging.getLogger(__name__)
-
-# ── Reasoning-Core sağlayıcı seçimi config.yaml > fallback_providers'tan
-#    okunur; burada sabit kodlanmıyor ki tek kaynak config.yaml kalsın.
-_REASONING_PROVIDER_ADI = "reasoning-core"
-
+# ── Reasoning-Core Fonksiyonlari ───────────────────────────────────────
 
 def _analitik_db_hazirla() -> None:
     """analitik.db'de reasoning_log tablosu yoksa oluşturur (idempotent)."""
@@ -292,7 +267,7 @@ def _reasoning_core_cagir(prompt: str, fallback_providers: list[dict], timeout: 
 
     base_url = provider_cfg["base_url"].rstrip("/")
     model = provider_cfg["model"]
-    api_key = provider_cfg.get("api_key", "not-needed")  # yerel sunucuda genelde gerekmez
+    api_key = provider_cfg.get("api_key", "not-needed")
 
     t0 = time.time()
     resp = requests.post(
@@ -301,7 +276,7 @@ def _reasoning_core_cagir(prompt: str, fallback_providers: list[dict], timeout: 
         json={
             "model": model,
             "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.6,   # Ornith-1.0 önerilen sampling (bkz. HF model kartı)
+            "temperature": 0.6,
             "top_p": 0.95,
         },
         timeout=timeout,
@@ -315,8 +290,6 @@ def _reasoning_core_cagir(prompt: str, fallback_providers: list[dict], timeout: 
     icerik = mesaj.get("content", "")
 
     if not dusunce and "<think>" in icerik:
-        # Sunucu reasoning-parser'sız çalışıyorsa <think> bloğu content
-        # içine gömülü gelir; burada ayıklanıyor.
         try:
             dusunce = icerik.split("<think>", 1)[1].split("</think>", 1)[0].strip()
             icerik = icerik.split("</think>", 1)[1].strip()
@@ -363,10 +336,7 @@ def reasoning_loop(
 
     try:
         sonuc = _reasoning_core_cagir(prompt, fallback_providers)
-    except Exception as exc:  # noqa: BLE001 — burada geniş yakalama kasıtlı:
-        # Reasoning-Core ulaşılamaz olsa bile ana bot akışı çökmemeli,
-        # config.yaml > fallback_providers zaten bir sonraki sağlayıcıya
-        # düşecek şekilde tasarlanmıştı; burada sadece logluyoruz.
+    except Exception as exc:
         logger.warning("reasoning_loop: Reasoning-Core çağrısı başarısız: %s", exc)
         return {"basarili": False, "hata": str(exc)}
 
@@ -399,3 +369,22 @@ def reasoning_loop(
         bot_adi, kayit["sure_sn"],
     )
     return {"basarili": True, **kayit}
+
+
+# ── CLI ─────────────────────────────────────────────────────────────────
+
+if __name__ == "__main__":
+    import sys
+    # CLI'da sys.path'e proje kökünü ekle (reymen paketini bulmak için)
+    _cli_kok = Path(__file__).resolve().parent.parent.parent
+    if str(_cli_kok) not in sys.path:
+        sys.path.insert(0, str(_cli_kok))
+    if len(sys.argv) > 1 and sys.argv[1] == "tara":
+        for ad in BOTLAR:
+            d = tara_profil(BOTLAR[ad]["profil"])
+            print(f"{ad}: SOUL={d['soul_boyut']}b, Browser={d['browser']}, CWD={d['terminal_cwd']}")
+    elif len(sys.argv) > 1 and sys.argv[1] == "guncelle":
+        sonuc = guncelle()
+        print(f"✅ durum.json guncellendi. Botlar esit mi: {sonuc['esit_mi']['esit']}")
+    else:
+        print("Kullanim: python ortak_komut.py [tara|guncelle]")
