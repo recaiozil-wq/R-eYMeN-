@@ -1,126 +1,128 @@
 # ReYMeN
 
 > **A Self-Healing, Multi-Bot Agent Framework with Native Reasoning Core**
+>
+> Manage 3 bots asynchronously from a single center (`durum.json`), with MCP support,
+> plugin system, container sandbox, and closed-loop learning. MIT licensed.
 
-LangGraph'ın karmaşıklığına veya CrewAI'nin kısıtlamalarına takılmadan; tek bir merkezden (`durum.json`) 3 farklı botu asenkron yöneten, kendi hatalarından öğrenen ve MCP destekli otonom bir altyapı.
-
-**694 Python dosyası, 231K satır kod, tek geliştirici. MIT lisansı.**
+**694 Python files, 231K lines of code, single developer. MIT license.**
 
 ---
 
-## 🔥 ReYMeN vs Dünya
+## 🔥 ReYMeN vs The World
 
-| Özellik | ReYMeN | LangGraph | CrewAI | OpenAI SDK |
+| Feature | ReYMeN | LangGraph | CrewAI | OpenAI SDK |
 |---------|:------:|:---------:|:------:|:----------:|
-| Kendi Reasoning Core | ✅ **Ornith-1.0** | ❌ | ❌ | ❌ |
-| Multi-Bot Tek Merkez | ✅ **3 bot ortak** | ❌ | ❌ | ❌ |
-| Plugin Sistemi (7 hook) | ✅ | ❌ | ❌ | ❌ |
-| MCP Server (kendisi sunar) | ✅ | ❌ | ❌ | ❌ |
+| Own Reasoning Core | ✅ **Ornith-1.0** | ❌ | ❌ | ❌ |
+| Multi-Bot Single Center | ✅ **3 shared bots** | ❌ | ❌ | ❌ |
+| Plugin System (7 hooks) | ✅ | ❌ | ❌ | ❌ |
+| MCP Server (self-hosted) | ✅ | ❌ | ❌ | ❌ |
 | Discord + Telegram Gateway | ✅ | ❌ | ❌ | ❌ |
 | Container Sandbox | ✅ | ❌ | ❌ | ❌ |
-| Proaktif Bakım (8 önlem) | ✅ **ÖZGÜN** | ❌ | ❌ | ❌ |
-| Provider Abstraction | ✅ 5 provider | ✅ | ✅ | ✅ |
-| Platform Sayısı | 3 (TG/Discord/WA) | ❌ | ❌ | ❌ |
+| Proactive Maintenance (8 checks) | ✅ **UNIQUE** | ❌ | ❌ | ❌ |
+| Provider Abstraction | ✅ 5+ providers | ✅ | ✅ | ✅ |
+| Platform Count | 17+ (TG/Discord/WA/Slack/Teams...) | ❌ | ❌ | ❌ |
 
 ---
 
-## 🚀 Quickstart (1 Dakika)
+## 🚀 Quickstart (1 Minute)
 
 ```bash
-# 1. Klonla
+# 1. Clone
 git clone https://github.com/recaiozil-wq/reymen-agent.git
 cd reymen-agent
 
-# 2. Sanal ortam
+# 2. Virtual environment
 uv venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 uv pip install -e .
 
-# 3. API key'ini ekle
+# 3. Add your API key
 cp .env.example .env
-# .env'ye DEEPSEEK_API_KEY veya OPENAI_API_KEY yaz
+# Set DEEPSEEK_API_KEY or OPENAI_API_KEY in .env
 
-# 4. Çalıştır
+# 4. Run
 python -c "from src.reymen.cereyan.beyin import Beyin; b = Beyin({'model':{'provider':'deepseek','model':'deepseek-v4-flash'}}); print(b.dusun('Merhaba!'))"
 ```
 
-Veya Docker ile:
+Or with Docker:
 ```bash
 docker compose up
 ```
 
 ---
 
-## 📂 Dizin Yapısı
+## 📂 Directory Structure
 
 ```
 src/
-├── reymen/          # Framework çekirdeği
-│   ├── cereyan/     # Beyin, Motor, Conversation Loop
-│   ├── arac/        # Tools (50+ araç)
+├── reymen/          # Framework core
+│   ├── cereyan/     # Brain, Motor, Conversation Loop
+│   ├── arac/        # Tools (50+)
 │   ├── plugin/      # PluginBase + PluginManager
-│   ├── plugins/     # Kullanıcı eklentileri
+│   ├── plugins/     # User plugins
 │   ├── hafiza/      # Session DB, OnceHafiza, Vector Memory
 │   ├── guvenlik/    # Container Sandbox, File Safety
 │   └── sistem/      # Credential Persistence, DB Config
-├── gateways/        # Platform entegrasyonları
+├── gateways/        # Platform integrations
 │   ├── discord_bot.py
 │   ├── telegram_bot.py
 │   ├── mcp_server.py
-│   └── platforms/   # WhatsApp, Telegram network
+│   └── platforms/   # 17+ platform adapters
 ├── core/            # Reasoning Core, Credential Pool
 │   ├── observability.py
 │   ├── credential_pool.py
 │   └── provider_abstraction.py
-examples/            # 4 kullanım senaryosu
-tests/               # 112 test dosyası
+examples/            # 4 usage scenarios
+tests/               # 112 test files
 ```
 
 ---
 
-## ✨ Öne Çıkan Özellikler
+## ✨ Key Features
 
-| Özellik | Açıklama |
-|---------|----------|
-| 🧠 **Reasoning Core** | Ornith-1.0 ile hata → DURUM_OKU() → çözüm → analitik.db. Kapalı öğrenme döngüsü |
-| 👥 **3 Bot Tek Merkez** | pasa_38, ReYMeN, kiral38 aynı config/hafıza/session. `durum.json` TEK KAYNAK |
-| 🧩 **Plugin Sistemi** | 7 lifecycle hook: on_load, on_message, pre_llm_call, post_llm_call, on_session_start/end, on_unload |
-| 🔗 **MCP Server** | Kendisi MCP sunar: 6 araç (list_sessions, send_message, search_sessions...) |
-| 🔑 **Provider Abstraction** | 5 provider: DeepSeek, OpenAI, Anthropic, xAI, OpenRouter. Tek satırda değiştir |
-| ✅ **Pydantic Validation** | Tool çağrılarında type-safe validation, JSON auto-fix |
-| 📊 **OpenTelemetry** | LLM/tool/session span'leri, token/maliyet/latency takibi |
-| 🐳 **Container Sandbox** | Docker izolasyon (kapali/kismi/tam). Güvenli kod çalıştırma |
-| 📎 **@file/@url Referans** | `@file:config.yaml` veya `@url:https://...` ile inline okuma |
-| 🔊 **Voice Mode** | Gerçek zamanlı sesli konuşma (TTS + STT) |
-| 🩺 **Proaktif Bakım** | 8 önlem: config drift, watchdog, SOUL sync, state.db prune, haftalık rapor |
-| 🔄 **Otomatik Startup** | Reboot'ta 3 bot penceresiz başlar (VBS) |
+| Feature | Description |
+|---------|-------------|
+| 🧠 **Reasoning Core** | Ornith-1.0: error → DURUM_OKU() → solution → analytics.db. Closed learning loop |
+| 👥 **3 Bots, One Center** | pasa_38, ReYMeN, kiral38 share config/memory/sessions. `durum.json` SINGLE SOURCE |
+| 🧩 **Plugin System** | 7 lifecycle hooks: on_load, on_message, pre_llm_call, post_llm_call, on_session_start/end, on_unload |
+| 🔗 **MCP Server** | Self-hosted MCP: 6 tools (list_sessions, send_message, search_sessions...) |
+| 🔑 **Provider Abstraction** | 5+ providers: DeepSeek, OpenAI, Anthropic, xAI, OpenRouter. Switch in one line |
+| ✅ **Pydantic Validation** | Type-safe tool calls, auto JSON fix |
+| 📊 **OpenTelemetry** | LLM/tool/session spans, token/cost/latency tracking |
+| 🐳 **Container Sandbox** | Docker isolation (off/partial/full). Secure code execution |
+| 📎 **@file/@url Reference** | Inline reading via `@file:config.yaml` or `@url:https://...` |
+| 🔊 **Voice Mode** | Real-time voice conversation (TTS + STT) |
+| 🩺 **Proactive Maintenance** | 8 checks: config drift, watchdog, SOUL sync, state.db prune, weekly report |
+| 🔄 **Auto Startup** | 3 bots start headlessly on reboot (VBS) |
+| 🌐 **17+ Platforms** | Telegram, Discord, WhatsApp, Slack, Teams, Matrix, Signal, Mattermost, DingTalk, Feishu, WeCom, Google Chat, Home Assistant, BlueBubbles, QQ Bot, Yuanbao, and more |
 
 ---
 
-## 🎯 Kullanım Senaryoları
+## 🎯 Usage Examples
 
 ```bash
-# Örnek 1: Merhaba ReYMeN
+# Example 1: Hello ReYMeN
 python examples/00_merhaba_reymen.py
 
-# Örnek 2: Plugin yazma
+# Example 2: Write a plugin
 python examples/01_plugin_kullanimi.py
 
-# Örnek 3: MCP Server başlatma
+# Example 3: Start MCP Server
 python -c "from src.gateways.mcp_server import main; main()"
 
-# Örnek 4: Container Sandbox
+# Example 4: Container Sandbox
 python examples/03_container_sandbox.py
 ```
 
 ---
 
-## 🛠 Geliştirici
+## 🛠 Developer
 
-Tek geliştirici: **Marko (Pasa_38)** — [@Pasa_38_bot](https://t.me/Pasa_38_bot)
+Single developer: **Marko (Pasa_38)** — [@Pasa_38_bot](https://t.me/Pasa_38_bot)
 
 ---
 
-## 📜 Lisans
+## 📜 License
 
-MIT License — dilediğiniz gibi kullanın, değiştirin, dağıtın.
+MIT License — use, modify, distribute freely.
