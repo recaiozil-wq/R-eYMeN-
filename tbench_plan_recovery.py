@@ -96,7 +96,13 @@ def analyze_task(task_dir):
 # === EXECUTION KATMANI ===
 
 def run_in_docker(task_dir, cmd, timeout=120):
-    """Docker container'da komut çalıştır."""
+    """Docker container'da komut çalıştır.
+    Çoklu servis varsa docker-compose'a yönlendir."""
+    # Multi-service kontrol
+    compose_path = os.path.join(BASE, task_dir, "docker-compose.yaml")
+    if os.path.isfile(compose_path) and get_compose_services(task_dir) > 1:
+        return run_in_compose(task_dir, cmd, timeout)
+    
     win_path = f"{BASE}\\{task_dir}"
     docker_cmd = f'docker run --rm -v "{win_path}:/app" {IMAGE} bash -c "{cmd}"'
     try:
@@ -127,6 +133,123 @@ def run_in_docker_verbose(task_dir, cmd, timeout=120):
         error_type = "IMPORT_ERROR"
     elif "Permission denied" in err:
         error_type = "PERMISSION"
+    
+    return rc, out, err, error_type
+
+# === DOCKER-COMPOSE KATMANI ===
+
+COMPOSE_IMAGE = "reymen-tbench-compose:latest"
+
+def get_compose_service_names(task_dir):
+    """docker-compose.yaml'daki servis adlarını döndür (YAML ayrıştırma)."""
+    compose_path = os.path.join(BASE, task_dir, "docker-compose.yaml")
+    if not os.path.isfile(compose_path):
+        return []
+    with open(compose_path) as f:
+        content = f.read()
+    # Find the services: block, then get names at indent level +2
+    services = []
+    in_services = False
+    for line in content.splitlines():
+        if line.strip().startswith("services:"):
+            in_services = True
+            continue
+        if in_services:
+            # Lines at indent 0 = out of services block
+            if line and not line[0].isspace():
+                break
+            # Service names have exactly 2-space indent (4 on Windows) or tab
+            stripped = line.lstrip()
+            indent = len(line) - len(stripped)
+            if indent == 2 and stripped.endswith(":") and stripped != ":":
+                services.append(stripped[:-1])
+    return services
+
+def get_compose_services(task_dir):
+    """docker-compose.yaml'daki servis sayısını bul."""
+    return len(get_compose_service_names(task_dir))
+
+def build_compose_image(task_dir):
+    """Task'in Dockerfile'ından compose imajı build et."""
+    task_path = os.path.join(BASE, task_dir)
+    dockerfile = os.path.join(task_path, "Dockerfile")
+    if not os.path.isfile(dockerfile):
+        return False, "No Dockerfile"
+    try:
+        tag = f"reymen-task-{task_dir}"
+        r = subprocess.run(
+            ["docker", "build", "-t", tag, "-f", dockerfile, task_path],
+            capture_output=True, text=True, timeout=180
+        )
+        if r.returncode == 0:
+            return True, tag
+        return False, r.stderr[-200:]
+    except Exception as e:
+        return False, str(e)
+
+def run_in_compose(task_dir, cmd, timeout=180):
+    """docker-compose ile çoklu container'da komut çalıştır."""
+    task_path = os.path.join(BASE, task_dir)
+    compose_file = os.path.join(task_path, "docker-compose.yaml")
+    
+    if not os.path.isfile(compose_file):
+        return run_in_docker(task_dir, cmd, timeout)
+    
+    service_count = get_compose_services(task_dir)
+    if service_count <= 1:
+        return run_in_docker(task_dir, cmd, timeout)
+    
+    # Multi-service: docker-compose kullan
+    try:
+        # Build images
+        build_ok, tag = build_compose_image(task_dir)
+        if not build_ok:
+            return -1, "", f"Build failed: {tag}"
+        
+        # docker-compose up
+        up = subprocess.run(
+            ["docker-compose", "-f", compose_file, "up", "-d", "--build"],
+            capture_output=True, text=True, timeout=timeout
+        )
+        if up.returncode != 0:
+            subprocess.run(["docker-compose", "-f", compose_file, "down"], capture_output=True, timeout=30)
+            return -1, "", f"compose up failed: {up.stderr[-200:]}"
+        
+        # Ana serviste komut çalıştır (ilk servis)
+        service_names = get_compose_service_names(task_dir)
+        main_service = service_names[0] if service_names else "app"
+        exec_cmd = ["docker-compose", "-f", compose_file, "exec", "-T", main_service, "bash", "-c", cmd]
+        r = subprocess.run(exec_cmd, capture_output=True, text=True, timeout=timeout)
+        
+        # Temizlik
+        subprocess.run(["docker-compose", "-f", compose_file, "down", "-v"], capture_output=True, timeout=30)
+        
+        return r.returncode, r.stdout, r.stderr
+    
+    except subprocess.TimeoutExpired:
+        subprocess.run(["docker-compose", "-f", compose_file, "down"], capture_output=True, timeout=30)
+        return -1, "", "TIMEOUT"
+    except Exception as e:
+        subprocess.run(["docker-compose", "-f", compose_file, "down"], capture_output=True, timeout=30)
+        return -1, "", str(e)
+
+def run_in_compose_verbose(task_dir, cmd, timeout=180):
+    """Compose'da çalıştır ve detaylı hata döndür."""
+    rc, out, err = run_in_compose(task_dir, cmd, timeout)
+    
+    error_type = "UNKNOWN"
+    if rc == 0:
+        error_type = "OK"
+    elif err == "TIMEOUT":
+        error_type = "TIMEOUT"
+    elif "command not found" in err or "not found" in err:
+        error_type = "CMD_NOT_FOUND"
+    elif "No such file" in err:
+        error_type = "FILE_NOT_FOUND"
+    elif "pip" in err and ("error" in err or "failed" in err):
+        error_type = "PIP_ERROR"
+    elif "ImportError" in out or "ModuleNotFoundError" in out:
+        error_type = "IMPORT_ERROR"
     
     return rc, out, err, error_type
 

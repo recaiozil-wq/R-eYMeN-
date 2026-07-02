@@ -1,5 +1,7 @@
-# Dependency directories
-reymen/
+# Dependency directories (core code)
+reymen/*
+!reymen/ag/
+!reymen/ag/*
 .venv/
 venv/
 env/
