@@ -28,6 +28,10 @@ display:
 fallback_providers:
 - api_mode: chat_completions
   base_url: https://api.deepseek.com
+  model: deepseek-v4-pro
+  provider: deepseek
+- api_mode: chat_completions
+  base_url: https://api.deepseek.com
   model: deepseek-v4-flash
   provider: deepseek
 - api_mode: chat_completions
@@ -64,7 +68,7 @@ fallback_providers:
   # bir süreçte (vLLM/SGLang) çalıştıracaksan port çakışmasını önlemek
   # için base_url'i http://127.0.0.1:1235/v1 gibi farklı bir porta çek.
   base_url: http://127.0.0.1:1234/v1
-  model: Ornith-1.0-9B
+  model: ornith-1.0-9b
   provider: reasoning-core-local
 - api_mode: chat_completions
   # OpenRouter'daki tam model kimliğini kullanmadan önce doğrula:
@@ -135,14 +139,14 @@ web:
 #   kismi:  Container'da calistir, volume mount ile dosya paylasimi acik
 #   tam:    Container'da calistir, dosya paylasimi yok, network kapali
 container:
-  sandbox_mode: kapali
+  sandbox_mode: kismi
   image: python:3.11-slim
-  timeout: 60
-  memory_limit: 512m
-  cpu_limit: 1.0
-  max_output_chars: 50000
+  timeout: 600
+  memory_limit: 1024m
+  cpu_limit: 2.0
+  max_output_chars: 100000
   workdir: /workspace
-  network_enabled: false
+  network_enabled: true
   volume_mounts: []
   env_vars: {}
   container_name_prefix: reymen-sandbox

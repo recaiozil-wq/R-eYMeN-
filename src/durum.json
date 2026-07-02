@@ -1,0 +1,63 @@
+{
+  "proje": "ReYMeN Agent",
+  "surum": "2026-06-30",
+  "botlar": {
+    "pasa_38": {
+      "profil": "default",
+      "bot_adi": "@Pasa_38_bot",
+      "gateway": "aktif",
+      "yetki": "tam",
+      "browser": "acik",
+      "terminal": "acik",
+      "web": "firecrawl",
+      "soul_boyut": 1672,
+      "tools": "tum"
+    },
+    "reymen": {
+      "profil": "reymen",
+      "bot_adi": "@ReYMeN_ReYMeNbot",
+      "gateway": "aktif",
+      "yetki": "tam",
+      "browser": "acik",
+      "terminal": "acik",
+      "web": "firecrawl",
+      "soul_boyut": 1677,
+      "tools": "tum"
+    },
+    "kiral38": {
+      "profil": "kiral38",
+      "bot_adi": "@Kiral38bot",
+      "gateway": "aktif",
+      "yetki": "tam",
+      "browser": "acik",
+      "terminal": "acik",
+      "web": "firecrawl",
+      "soul_boyut": 1671,
+      "tools": "tum"
+    }
+  },
+  "ortak_komutlar": {
+    "cevap_formati": "emoji+baslik+tablo+yorum",
+    "dil": "Turkce",
+    "cave_modu": true,
+    "no_goblins": true,
+    "side_quest": "sub_agent'a yonlendir",
+    "durum_oku_zorunlu": true,
+    "kendi_bilgisiyle_cevap_yasak": true,
+    "kaynak": "durum.json TEK KAYNAK",
+    "reasoning_core_aktif": true
+  },
+  "reasoning_core": {
+    "durum": "entegre",
+    "merkezi_db": "analitik.db",
+    "tablo": "reasoning_log",
+    "provider_config": "config.yaml > fallback_providers > reasoning-core-*",
+    "model_local": "Ornith-1.0-9B (LM Studio)",
+    "model_openrouter": "deepreinforce-ai/ornith-1.0-397b",
+    "durum_oku_zorunlulugu": "evet"
+  },
+  "esit_mi": {
+    "esit": true,
+    "aciklama": "Tum botlar esit"
+  }
+}
